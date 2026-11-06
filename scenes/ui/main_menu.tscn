@@ -1,0 +1,30 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://scripts/gameplay/forest_environment.gd" id="2_forest"]
+[ext_resource type="Script" path="res://scripts/gameplay/stump_builder.gd" id="3_stump"]
+[ext_resource type="Script" path="res://scripts/gameplay/sword_controller.gd" id="4_sword"]
+[ext_resource type="Script" path="res://scripts/gameplay/gameplay_camera.gd" id="5_cam"]
+[ext_resource type="Script" path="res://scripts/systems/game_audio.gd" id="6_audio"]
+
+[node name="MainMenu" type="Node"]
+script = ExtResource("1_menu")
+
+[node name="Audio" type="Node" parent="."]
+script = ExtResource("6_audio")
+
+[node name="Stage" type="Node3D" parent="."]
+
+[node name="Forest" type="Node3D" parent="Stage"]
+script = ExtResource("2_forest")
+
+[node name="Stump" type="Node3D" parent="Stage"]
+script = ExtResource("3_stump")
+
+[node name="Sword" type="Node3D" parent="Stage"]
+script = ExtResource("4_sword")
+
+[node name="Camera3D" type="Camera3D" parent="Stage"]
+script = ExtResource("5_cam")
+camera_position = Vector3(0, 2.95, 5.7)
+look_target = Vector3(0, 1.95, 0)

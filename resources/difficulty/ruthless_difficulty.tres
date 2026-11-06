@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="DifficultyConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/difficulty/difficulty_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+start_peak_gain = 5.2
+end_peak_gain = 3.2
+peak_gain_ramp_levels = 6.0
+start_max_tap_interval_msec = 370.0
+end_max_tap_interval_msec = 250.0
+interval_ramp_levels = 6.0
+start_resistance = 0.08
+end_resistance = 0.6
+resistance_ramp_levels = 6.0
+start_decay_per_second = 7.0
+start_decay_grace_seconds = 0.35
+end_decay_per_second = 18.0
+end_decay_grace_seconds = 0.15
+ramp_levels = 6.0

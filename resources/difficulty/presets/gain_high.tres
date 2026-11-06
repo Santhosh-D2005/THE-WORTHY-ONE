@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="DifficultyConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/difficulty/difficulty_config.gd" id="1_cfg"]
+
+[resource]
+script = ExtResource("1_cfg")
+start_peak_gain = 8.0
+end_peak_gain = 6.0

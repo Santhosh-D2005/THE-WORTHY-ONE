@@ -1,0 +1,45 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="THE WORTHY ONE"
+config/description="One sword. One tree. One challenge."
+run/main_scene="res://scenes/ui/main_menu.tscn"
+config/quit_on_go_back=false
+config/features=PackedStringArray("4.7", "Mobile")
+config/icon="res://assets/branding/icon_512.png"
+
+[autoload]
+
+GameManager="*res://scripts/core/game_manager.gd"
+PerfProbe="*res://scripts/core/perf_probe.gd"
+Progress="*res://scripts/core/progress.gd"
+Account="*res://scripts/core/account.gd"
+Backend="*res://scripts/core/backend.gd"
+RunSync="*res://scripts/core/run_sync.gd"
+[display]
+
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/size/window_width_override=540
+window/size/window_height_override=960
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=false
+
+[rendering]
+
+renderer/rendering_method="mobile"
+textures/vram_compression/import_etc2_astc=true

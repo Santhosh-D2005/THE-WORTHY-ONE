@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- PLACEHOLDER launcher icon: antique-gold sword on a dark forest ground. Replace with final art. -->
+  <rect width="128" height="128" rx="22" fill="#0f1a12"/>
+  <circle cx="64" cy="64" r="52" fill="#1b2b1f"/>
+  <ellipse cx="64" cy="100" rx="34" ry="9" fill="#5a4328"/>
+  <rect x="58" y="92" width="12" height="9" fill="#3a2a18"/>
+  <polygon points="64,18 70,34 70,88 58,88 58,34" fill="#b9bcc0"/>
+  <rect x="62.5" y="30" width="3" height="54" fill="#8e9297"/>
+  <rect x="44" y="86" width="40" height="7" rx="3" fill="#c9a45c"/>
+  <rect x="61" y="93" width="6" height="14" fill="#2a1d12"/>
+  <circle cx="64" cy="111" r="5" fill="#c9a45c"/>
+</svg>

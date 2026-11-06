@@ -1,0 +1,122 @@
+[
+ [
+  "Arthur",
+  null
+ ],
+ [
+  "Forest Wanderer #4821",
+  null
+ ],
+ [
+  "Sir_Lancelot-2",
+  null
+ ],
+ [
+  "O'Brien",
+  null
+ ],
+ [
+  "Zoë",
+  null
+ ],
+ [
+  "శ్రీరామ్",
+  null
+ ],
+ [
+  "राम सिंह",
+  null
+ ],
+ [
+  "  Sir   Galahad  ",
+  null
+ ],
+ [
+  "Ab",
+  "too_short"
+ ],
+ [
+  "",
+  "too_short"
+ ],
+ [
+  "   ",
+  "too_short"
+ ],
+ [
+  "xxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "too_long"
+ ],
+ [
+  "xxxxxxxxxxxxxxxxxxxxxxxxxx",
+  null
+ ],
+ [
+  "Knight<script>",
+  "bad_character"
+ ],
+ [
+  "Hero\nTwo",
+  "bad_character"
+ ],
+ [
+  "Smile 😀 Man",
+  "bad_character"
+ ],
+ [
+  "a/b\\c",
+  "bad_character"
+ ],
+ [
+  "name;drop",
+  "bad_character"
+ ],
+ [
+  "tab\there",
+  "bad_character"
+ ],
+ [
+  "12345",
+  "no_letters"
+ ],
+ [
+  "#### 1 9",
+  "no_letters"
+ ],
+ [
+  "Admin",
+  "reserved"
+ ],
+ [
+  "xXadminXx",
+  "reserved"
+ ],
+ [
+  "G a m e M a s t e r",
+  "reserved"
+ ],
+ [
+  "Support Team",
+  "reserved"
+ ],
+ [
+  "0fficial",
+  "reserved"
+ ],
+ [
+  "Fuck You",
+  "not_allowed"
+ ],
+ [
+  "sh1t",
+  "not_allowed"
+ ],
+ [
+  "B1tch",
+  "not_allowed"
+ ],
+ [
+  "H1tl3r",
+  "not_allowed"
+ ]
+]

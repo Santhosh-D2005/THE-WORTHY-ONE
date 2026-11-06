@@ -1,0 +1,30 @@
+# Godot 4 generated / local data
+.godot/
+*.tmp
+*.translation.import
+# Exported builds (APK/EXE etc.) - regenerate with export_presets.cfg
+build/
+*.apk
+*.aab
+*.exe
+*.pck
+*.zip
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem

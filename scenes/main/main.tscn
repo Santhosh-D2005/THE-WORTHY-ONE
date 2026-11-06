@@ -1,0 +1,59 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/managers/level_manager.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/gameplay/input_controller.gd" id="2_input"]
+[ext_resource type="Script" path="res://scripts/managers/extraction_manager.gd" id="3_extract"]
+[ext_resource type="Script" path="res://scripts/managers/difficulty_manager.gd" id="4_diff"]
+[ext_resource type="Script" path="res://scripts/managers/timer_manager.gd" id="5_timer"]
+[ext_resource type="Resource" path="res://resources/difficulty/default_difficulty.tres" id="6_cfg"]
+[ext_resource type="Script" path="res://scripts/gameplay/forest_environment.gd" id="7_forest"]
+[ext_resource type="Script" path="res://scripts/gameplay/stump_builder.gd" id="8_stump"]
+[ext_resource type="Script" path="res://scripts/gameplay/sword_controller.gd" id="9_sword"]
+[ext_resource type="Script" path="res://scripts/gameplay/gameplay_camera.gd" id="10_cam"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="11_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/failure_screen.tscn" id="12_fail"]
+[ext_resource type="Resource" path="res://resources/configuration/default_gameplay.tres" id="13_gp"]
+[ext_resource type="Script" path="res://scripts/ui/pause_menu.gd" id="14_pause"]
+[ext_resource type="Script" path="res://scripts/systems/game_audio.gd" id="15_audio"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_level")
+gameplay_config = ExtResource("13_gp")
+
+[node name="InputController" type="Node" parent="."]
+script = ExtResource("2_input")
+
+[node name="ExtractionManager" type="Node" parent="."]
+script = ExtResource("3_extract")
+
+[node name="DifficultyManager" type="Node" parent="."]
+script = ExtResource("4_diff")
+config = ExtResource("6_cfg")
+
+[node name="TimerManager" type="Node" parent="."]
+script = ExtResource("5_timer")
+
+[node name="Audio" type="Node" parent="."]
+script = ExtResource("15_audio")
+
+[node name="Stage" type="Node3D" parent="."]
+
+[node name="Forest" type="Node3D" parent="Stage"]
+script = ExtResource("7_forest")
+
+[node name="Stump" type="Node3D" parent="Stage"]
+script = ExtResource("8_stump")
+
+[node name="Sword" type="Node3D" parent="Stage"]
+script = ExtResource("9_sword")
+
+[node name="Camera3D" type="Camera3D" parent="Stage"]
+script = ExtResource("10_cam")
+
+[node name="Hud" type="CanvasLayer" parent="."]
+script = ExtResource("11_hud")
+
+[node name="FailureScreen" parent="." instance=ExtResource("12_fail")]
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("14_pause")
