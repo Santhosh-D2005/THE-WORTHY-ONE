@@ -28,6 +28,7 @@ func _ready() -> void:
 	await _t_panel()
 	await _t_pause_menu()
 	await _t_credits()
+	await _t_delete_flow()
 	Settings.reset_to_defaults()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Settings.default_path()))
 	print("\n%d checks, %d failure(s)" % [_checks, _failures])
@@ -224,4 +225,33 @@ func _t_credits() -> void:
 	_check(not settings.showing_credits() and settings.is_showing, "Escape from the credits returns to the settings")
 	settings.close()
 	settings.queue_free()
+	await _frames(2)
+
+# ---- Delete account: the confirmation step on the account screen (the server call itself is tested in backend_tests) ----------------
+
+func _t_delete_flow() -> void:
+	print("Delete account (screen)")
+	Account.reset_for_test(Account.TEST_FILE_PATH)
+	Account.set_logged_in("99999999-8888-4777-8666-555555555555", "Sir_Kay")
+	var screen := AccountScreen.new()
+	add_child(screen)
+	await _frames(2)
+	screen.open()
+	var guard := Time.get_ticks_msec() + 3000
+	while not screen.buttons_ready and Time.get_ticks_msec() < guard:
+		await get_tree().process_frame
+	var delete_button := screen.find_child("DeleteAccountButton", true, false) as Button
+	_check(delete_button != null and delete_button.is_visible_in_tree(), "a logged-in player sees DELETE ACCOUNT")
+	delete_button.pressed.emit()
+	var confirm := screen.find_child("DeleteConfirm", true, false) as Control
+	_check(confirm != null and confirm.visible and not delete_button.is_visible_in_tree(), "DELETE ACCOUNT opens the confirmation (the rest of the screen is hidden)")
+	(screen.find_child("ConfirmDeleteButton", true, false) as Button).pressed.emit()
+	_check((screen.find_child("DeleteMessage", true, false) as Label).text == "Type your password to confirm.", "DELETE FOREVER without a password does nothing and asks for it")
+	_check(Account.logged_in, "...and the account is still there")
+	(screen.find_child("CancelDeleteButton", true, false) as Button).pressed.emit()
+	_check(not confirm.visible and delete_button.is_visible_in_tree(), "CANCEL returns to the account screen with nothing deleted")
+	_check(Account.logged_in, "the account is still logged in after cancelling")
+	screen.close()
+	screen.queue_free()
+	Account.reset_for_test(Account.TEST_FILE_PATH)
 	await _frames(2)

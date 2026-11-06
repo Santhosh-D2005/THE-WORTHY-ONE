@@ -33,3 +33,11 @@ desktop.ini
 *.keystore
 *.jks
 *.env
+
+# Android Gradle build output (the template in android/build is kept; its outputs are not)
+android/build/build/
+android/build/.gradle/
+android/build/libs/
+.gradle/
+*.aab
+android/

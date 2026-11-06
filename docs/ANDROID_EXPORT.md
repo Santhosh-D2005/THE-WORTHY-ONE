@@ -89,3 +89,24 @@ Do not rely on `print()` or logcat to see it: `print()` output did not appear in
 - `aapt2` reports a missing `themed_icon.xml` warning for the template's monochrome icon; harmless.
 - The launcher icon is a placeholder SVG.
 - Battery/thermals were not measured. Only one device (Android 13, 720x1600, 60 Hz) has been used.
+
+## Release builds (signed) and the Play Store bundle
+
+Presets in `export_presets.cfg`: **Android** (debug APK), **Android Release** (signed APK for testing on a phone) and **Android Release AAB**
+(the Play Store bundle). The signing key is NOT in the project. Keep `release.keystore` and its password safe and outside the repo, and
+give Godot the key through environment variables when exporting:
+
+```
+GODOT_ANDROID_KEYSTORE_RELEASE_PATH=<path to release.keystore>
+GODOT_ANDROID_KEYSTORE_RELEASE_USER=<key alias>
+GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=<password>
+godot --headless --path . --export-release "Android Release"      build/android/TheWorthyOne-release.apk
+godot --headless --path . --export-release "Android Release AAB"  build/android/TheWorthyOne-release.aab
+```
+
+The AAB uses a Gradle build, so the **Android build template must be installed in the project once** (Godot editor: Project > Install Android
+Build Template; it creates `android/build/`, which git ignores) and the first build downloads Gradle dependencies, so it needs internet.
+The command-line flag for installing the template does not work headlessly. Unzipping `android_source.zip` from the export templates into
+`android/build/` and writing the version string into `android/.build_version` does the same.
+A phone that has a debug-signed build must uninstall it before installing the release-signed one. Upload the AAB to Google Play; losing the
+keystore means being unable to publish updates unless you use Play App Signing and register the upload key.

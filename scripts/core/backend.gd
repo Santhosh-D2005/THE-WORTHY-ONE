@@ -131,6 +131,19 @@ func log_out() -> Dictionary:
 	expires_at = 0
 	return answer
 
+## Permanently delete the account on the server. The password is asked for again, so a stolen session cannot do it. On success this
+## phone forgets the account and drops any queued Hall of Fame reports for it; the records kept on the phone stay. If the server cannot
+## be reached nothing changes: the account is kept and the player can try again.
+func delete_account(password: String) -> Dictionary:
+	var answer := await call_server("delete_account", {"p_password": password})
+	if answer.get("ok", false):
+		Account.clear_login()
+		access_token = ""
+		expires_at = 0
+		Progress.store.data["queue"] = []
+		Progress.store.save()
+	return answer
+
 func change_password(old_password: String, new_password: String) -> Dictionary:
 	return await call_server("change_password", {"p_old": old_password, "p_new": new_password})
 

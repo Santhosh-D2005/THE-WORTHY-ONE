@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432"><g transform="translate(216.0 216.0) scale(0.7) translate(-216.0 -216.0)">
+  <circle cx="216" cy="172" r="118" fill="none" stroke="#ffcf6a" stroke-width="3" opacity="0.55"/>
+  <circle cx="216" cy="172" r="132" fill="none" stroke="#ffcf6a" stroke-width="1.5" opacity="0.25"/>
+  <ellipse cx="216" cy="300" rx="118" ry="30" fill="#f0a64a"/>
+  <ellipse cx="216" cy="300" rx="92" ry="22" fill="none" stroke="#ffd98a" stroke-width="2" opacity="0.8"/>
+  <ellipse cx="216" cy="300" rx="58" ry="13" fill="none" stroke="#ffd98a" stroke-width="2" opacity="0.7"/>
+  <path d="M98 300 L98 362 Q216 404 334 362 L334 300 Z" fill="#1d0f2e"/>
+  <path d="M120 330 L150 348 L140 366 M268 320 L300 340 L286 352 M200 350 L216 372 L232 350"
+        fill="none" stroke="#ffb347" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  <ellipse cx="216" cy="362" rx="118" ry="30" fill="#2a1638"/>
+  <polygon points="216,70 226,150 226,262 206,262 206,150" fill="#fff1c8"/>
+  <polygon points="216,70 221,150 221,262 216,262" fill="#e2c27a" opacity="0.8"/>
+  <rect x="214" y="104" width="4" height="150" fill="#b8925a" opacity="0.7"/>
+  <rect x="146" y="256" width="140" height="16" rx="8" fill="#f5cd6f"/>
+  <rect x="146" y="256" width="140" height="5" rx="2.5" fill="#fff3c4" opacity="0.8"/>
+  <rect x="209" y="270" width="14" height="46" rx="4" fill="#4a2a10"/>
+  <circle cx="216" cy="324" r="11" fill="#f5cd6f"/>
+  <circle cx="216" cy="172" r="54" fill="#ffb347" opacity="0.10"/>
+</g></svg>

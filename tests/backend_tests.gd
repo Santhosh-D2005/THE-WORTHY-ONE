@@ -33,6 +33,7 @@ func _ready() -> void:
 	_t_config()
 	await _t_session()
 	await _t_accounts()
+	await _t_delete()
 	await _t_errors()
 	await _t_sync()
 	Backend.transport = saved_transport
@@ -202,7 +203,7 @@ func _t_accounts() -> void:
 	_signed_in_session()
 	_answer_for("rpc/login", [_ok({"ok": true, "player_id": PID, "username": "Sir_Kay"})])
 	answer = await Backend.log_in("sir_kay", PASSWORD)
-	_check(answer["ok"] and Account.logged_in and Account.username == "Sir_Kay" and requests[0]["body"]["p_username"] == "sir_kay", "a good login logs in with the username the SERVER returns (its capitalisation), not what was typed")
+	_check(answer["ok"] and Account.logged_in and Account.username == "Sir_Kay" and requests.filter(func(r: Dictionary) -> bool: return str(r["path"]).ends_with("rpc/login")).back()["body"]["p_username"] == "sir_kay", "a good login logs in with the username the SERVER returns (its capitalisation), not what was typed")
 	_check(requests.back()["path"].contains("rpc/get_account"), "...and then fetches the account's records")
 	# log out, online and offline
 	_answer_for("rpc/logout", [_ok({"ok": true})])
@@ -401,3 +402,28 @@ func _t_sync() -> void:
 	_check(Progress.store.data["queue"].size() == 2, "a damaged save keeps only well-formed queue entries (2 of 5)")
 	_reset_progress()
 	RunSync.enabled = false
+
+func _t_delete() -> void:
+	print("
+[3b] DELETE ACCOUNT")
+	_reset_fake()
+	_logged_in()
+	Progress.store.data["queue"] = [{"kind": "end", "reason": "left", "run": "x"}]
+	_answer_for("rpc/delete_account", [_ok({"ok": false, "error": "wrong_credentials"})])
+	var answer: Dictionary = await Backend.delete_account("Wrong-Password-1")
+	_check(not answer["ok"] and answer["error"] == "wrong_credentials" and Account.logged_in, "a wrong password refuses the deletion and keeps the account")
+	_check(Progress.store.data["queue"].size() == 1, "...and keeps the queued reports")
+	_reset_fake()
+	_logged_in()
+	_answer_for("rpc/delete_account", [_down("offline")])
+	answer = await Backend.delete_account(PASSWORD)
+	_check(not answer["ok"] and answer["error"] == "offline" and Account.logged_in, "no connection: nothing is forgotten, the account is kept for a retry")
+	_reset_fake()
+	_logged_in()
+	Progress.store.data["queue"] = [{"kind": "end", "reason": "left", "run": "x"}]
+	_answer_for("rpc/delete_account", [_ok({"ok": true})])
+	answer = await Backend.delete_account(PASSWORD)
+	_check(answer["ok"] and not Account.logged_in and Account.username == "" and Account.player_id == "", "the right password deletes: this phone is logged out and forgets the account")
+	_check(requests[0]["path"].ends_with("rpc/delete_account") and requests[0]["body"].keys() == ["p_password"] and requests[0]["body"]["p_password"] == PASSWORD, "the request carries only the password")
+	_check(Progress.store.data["queue"].is_empty(), "queued Hall of Fame reports for the deleted account are dropped")
+	_check(not JSON.stringify(AccountStore.new(ACC).read()).contains(PASSWORD), "the password is not written to disk")

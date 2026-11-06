@@ -295,6 +295,23 @@ await db.exec(stripExtension(schema));
 check(true, 'schema.sql loads on an empty database, and a second time (idempotent)');
 await suite('(B) fresh install');
 
+// ---- account deletion (its own account, so the checks above are not affected) ----
+{
+  const del = await account('Delete_Me_Now', PW);
+  const delRun = await rpc(del.uid, 'start_run($1)', ['endless']);
+  await rpc(del.uid, 'submit_level($1::uuid,$2,$3)', [delRun.run_id, 1, 9999]);
+  check((await rpc(del.uid, 'delete_account($1)', ['Wrong-Password-1'])).error === 'wrong_credentials', 'deleting an account needs its password again');
+  check((await sql(`select count(*)::int as n from public.players where id = '${del.id}'`))[0].n === 1, 'a wrong password deletes nothing');
+  check((await rpc(del.uid, 'delete_account($1)', [PW])).ok, 'the right password deletes the account');
+  check((await sql(`select count(*)::int as n from public.players where id = '${del.id}'`))[0].n === 0, 'the player row is gone');
+  check((await sql(`select count(*)::int as n from public.records where player_id = '${del.id}'`))[0].n === 0 && (await sql(`select count(*)::int as n from public.runs where player_id = '${del.id}'`))[0].n === 0, 'its records and runs are removed with it');
+  check((await sql(`select count(*)::int as n from public.sessions where player_id = '${del.id}'`))[0].n === 0, 'its login sessions are removed');
+  check((await rpc(del.uid, 'get_account()')).error === 'not_logged_in', 'the deleted account can no longer be used from that session');
+  check((await rpc(del.uid, 'delete_account($1)', [PW])).error === 'not_logged_in', 'deleting twice is refused cleanly');
+  check((await rpc(await newSession(), 'delete_account($1)', [PW])).error === 'not_logged_in', 'a session with no account cannot delete anything');
+  check((await rpc(await newSession(), 'register_account($1,$2)', ['Delete_Me_Now', PW])).ok, 'the username is free again after deletion');
+}
+
 console.log(`\n==== ${checks} checks, ${failures} failed ====`);
 console.log(failures === 0 ? 'RESULT: ALL PASSED' : 'RESULT: FAILURES');
 process.exit(failures === 0 ? 0 : 1);
