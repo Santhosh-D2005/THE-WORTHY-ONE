@@ -238,13 +238,14 @@ func _t_hall() -> void:
 	await _wait(0.05)
 	_check(hall.requests_sent == requests_before, "paging past the end sends nothing")
 	# states
-	for case in [[{"ok": false, "error": "offline"}, "offline", "offline"], [{"ok": false, "error": "timeout"}, "offline", "offline"], [{"ok": false, "error": "http_503"}, "error", "http_503"], [{"ok": true, "total": 0, "entries": [], "me": null}, "empty", "No one has claimed"]]:
+	for case in [[{"ok": false, "error": "offline"}, "local", "You are offline"], [{"ok": false, "error": "timeout"}, "local", "You are offline"], [{"ok": false, "error": "http_503"}, "error", "http_503"], [{"ok": true, "total": 0, "entries": [], "me": null}, "empty", "No one has claimed"]]:
 		hall.close()
 		pending.clear()
 		hall.open_for(GameMode.Mode.ENDLESS)
 		_answer(0, case[0])
 		await _wait(0.1)
-		_check(hall.view_state == case[1] and hall._message.text.contains(case[2]) and not _row(hall, 0)["row"].visible and hall._me_label.text == "", "answer %s -> state '%s' with a message and no rows" % [str(case[0]).left(40), case[1]])
+		var has_local := int(Progress.best(GameMode.Mode.ENDLESS).get("best_level", 0)) > 0
+		_check(hall.view_state == case[1] and hall._message.text.contains(case[2]) and _row(hall, 0)["row"].visible == has_local, "answer %s -> state '%s' with a message; this device's best shows only when it has one" % [str(case[0]).left(40), case[1]])
 	_check(hall._message.text.contains("No one has claimed") and hall._refresh.disabled == false, "the empty board has no invented entries and REFRESH is available")
 	# duplicate taps and refresh
 	hall.close()

@@ -93,11 +93,11 @@ func _merge(source: Dictionary) -> void:
 				continue
 			var from: Dictionary = raw
 			var rec := record(mode_key)
-			rec["best_level"] = maxi(int(from.get("best_level", 0)), 0)
-			rec["best_seconds"] = maxf(float(from.get("best_seconds", 0.0)), 0.0)
-			rec["best_unix"] = maxi(int(from.get("best_unix", 0)), 0)
-			rec["runs"] = maxi(int(from.get("runs", 0)), 0)
-			rec["extractions"] = maxi(int(from.get("extractions", 0)), 0)
+			rec["best_level"] = maxi(_number_int(from.get("best_level", 0)), 0)
+			rec["best_seconds"] = maxf(_number_float(from.get("best_seconds", 0.0)), 0.0)
+			rec["best_unix"] = maxi(_number_int(from.get("best_unix", 0)), 0)
+			rec["runs"] = maxi(_number_int(from.get("runs", 0)), 0)
+			rec["extractions"] = maxi(_number_int(from.get("extractions", 0)), 0)
 	var run: Variant = source.get("ruthless_run", {})
 	if run is Dictionary:
 		var r: Dictionary = run
@@ -116,3 +116,10 @@ func _merge(source: Dictionary) -> void:
 	var last: Variant = source.get("last_run", {})
 	if last is Dictionary:
 		data["last_run"] = (last as Dictionary).duplicate()
+
+## A damaged save can hold any type in a number field: anything that is not a number counts as 0 (never an engine error).
+static func _number_int(value: Variant) -> int:
+	return int(value) if value is int or value is float else 0
+
+static func _number_float(value: Variant) -> float:
+	return float(value) if value is int or value is float else 0.0

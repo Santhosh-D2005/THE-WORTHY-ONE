@@ -1,6 +1,7 @@
 class_name HallOfFameScreen
 extends OverlayScreen
-## The online Hall of Fame: one screen with an ENDLESS tab and a RUTHLESS tab. It only DISPLAYS what the server returns (rank, name, level,
+## The Hall of Fame: one screen with an ENDLESS tab and a RUTHLESS tab. Online it shows the world board. Offline it shows this device's own
+## best in that mode (marked as local), because the world board needs a connection. It only DISPLAYS what the server returns (rank, name, level,
 ## time, "is me", and the player's own place even when it is off the page). Nothing is calculated, cached or invented on the device: with no
 ## answer it says so. Pages of 10 with PREV / NEXT (no scrolling needed on a touch screen), REFRESH, and a request is never sent twice at
 ## once; a late answer for a tab or page the player has already left is ignored.
@@ -14,6 +15,7 @@ var fetcher: Callable = func(mode: GameMode.Mode, limit: int, offset: int) -> Di
 var mode: GameMode.Mode = GameMode.Mode.ENDLESS
 var view_state: String = "idle"   # idle | loading | ready | empty | offline | error
 var requests_sent: int = 0
+var _local_note: String = ""
 
 var _offset: int = 0
 var _total: int = 0
@@ -128,7 +130,7 @@ func _on_action(button: Button) -> void:
 		_load()
 
 func _switch(new_mode: GameMode.Mode) -> void:
-	if new_mode == mode and view_state != "error" and view_state != "offline":
+	if new_mode == mode and view_state != "error" and view_state != "local":
 		return
 	mode = new_mode
 	_offset = 0
@@ -158,7 +160,10 @@ func _load() -> void:
 	_loading = false
 	if not reply.get("ok", false):
 		var error := str(reply.get("error", "error"))
-		_set_view("offline" if error in Backend.NETWORK_ERRORS else "error", error)
+		if error in Backend.NETWORK_ERRORS:
+			_show_local()
+		else:
+			_set_view("error", error)
 		return
 	_total = maxi(int(reply.get("total", 0)), 0)
 	var entries: Array = reply.get("entries", []) if reply.get("entries", []) is Array else []
@@ -168,6 +173,23 @@ func _load() -> void:
 		return
 	_show_entries(entries, reply.get("me"))
 	_set_view("empty" if _total == 0 else "ready")
+
+## Offline: this device's best in the current mode, as a one-row board. Nothing is invented: no record means an honest empty note.
+func _show_local() -> void:
+	var best: Dictionary = Progress.best(mode)
+	var level := int(best.get("best_level", 0))
+	if level > 0:
+		_total = 1
+		var name := Account.username if Account.logged_in and Account.username != "" else "You (this device)"
+		_show_entries([{"rank": 1, "name": name, "level": level, "seconds": float(best.get("best_seconds", 0.0)), "is_me": true}], null)
+		_me_label.text = "THIS DEVICE ONLY. The world Hall of Fame returns when you are online."
+		_local_note = "You are offline. Showing your best on this device."
+	else:
+		_total = 0
+		_show_entries([], null)
+		_me_label.text = ""
+		_local_note = "You are offline, and no sword has been drawn in this mode on this device yet. The world Hall of Fame returns when you are online."
+	_set_view("local")
 
 func _show_entries(entries: Array, me: Variant) -> void:
 	for i in PAGE_SIZE:
@@ -192,7 +214,7 @@ func _show_entries(entries: Array, me: Variant) -> void:
 
 func _set_view(new_state: String, error: String = "") -> void:
 	view_state = new_state
-	var showing_rows := new_state == "ready"
+	var showing_rows := new_state == "ready" or new_state == "local"
 	for slot in _rows:
 		if not showing_rows:
 			(slot["row"] as Control).visible = false
@@ -202,16 +224,15 @@ func _set_view(new_state: String, error: String = "") -> void:
 		"empty":
 			_message.text = "No one has claimed a place here yet."
 			_me_label.text = ""
-		"offline":
-			_message.text = "You are offline. The Hall of Fame needs a connection, and nothing is shown without one."
-			_me_label.text = ""
+		"local":
+			_message.text = _local_note
 		"error":
 			_message.text = "The Hall of Fame could not be reached (%s). Try again in a moment." % error
 			_me_label.text = ""
 		_:
 			_message.text = ""
 	_message.visible = new_state != "ready"
-	_me_label.visible = new_state == "ready"
+	_me_label.visible = new_state == "ready" or new_state == "local"
 	var pages := maxi(int(ceil(float(_total) / PAGE_SIZE)), 1)
 	_page_label.text = "PAGE %d / %d" % [_offset / PAGE_SIZE + 1, pages] if new_state == "ready" else ""
 	_prev.disabled = new_state != "ready" or _offset <= 0

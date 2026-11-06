@@ -25,7 +25,10 @@ var awaiting_confirmation: bool = false
 
 var _root: Control
 var _resume_button: Button
+var _settings_button: Button
 var _quit_button: Button
+var _settings: SettingsScreen
+var _settings_closed_frame: int = -1
 var _opened_msec: int = 0
 var _press_target: Button = null
 
@@ -33,6 +36,10 @@ func _ready() -> void:
 	layer = 20  # above the HUD (10) and failure screen (15)
 	process_mode = Node.PROCESS_MODE_ALWAYS  # the tree is paused while this is open
 	_build()
+	_settings = SettingsScreen.new()
+	_settings.name = "SettingsScreen"
+	add_child(_settings)
+	_settings.closed.connect(func() -> void: _settings_closed_frame = Engine.get_process_frames())
 	visible = false
 
 func show_menu(confirm_quit: bool = false) -> void:
@@ -58,6 +65,21 @@ func resume_button() -> Button:
 func quit_button() -> Button:
 	return _quit_button
 
+func settings_button() -> Button:
+	return _settings_button
+
+func settings_screen() -> SettingsScreen:
+	return _settings
+
+## The GameAudio of the level, so the settings panel can play its SFX preview click.
+func set_preview_audio(audio: GameAudio) -> void:
+	_settings.preview_audio = audio
+
+## True while the settings panel is open, or closed during this very frame: Android Back then belongs to the panel (closing it),
+## and must not also resume the game behind it. (The panel is a child of this node and sees the Back request first.)
+func back_belongs_to_settings() -> bool:
+	return _settings.is_showing or Engine.get_process_frames() == _settings_closed_frame
+
 # ---- Input -----------------------------------------------------------------------------------
 
 func _input(event: InputEvent) -> void:
@@ -78,7 +100,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _button_at(point: Vector2) -> Button:
-	for button in [_resume_button, _quit_button]:
+	for button in [_resume_button, _settings_button, _quit_button]:
 		if button.get_global_rect().has_point(point):
 			return button
 	return null
@@ -91,6 +113,8 @@ func _activate(button: Button) -> void:
 		return
 	if button == _resume_button:
 		resume_requested.emit()
+	elif button == _settings_button:
+		_settings.open()
 	elif confirm_before_quit and not awaiting_confirmation:
 		awaiting_confirmation = true
 		_quit_button.text = CONFIRM_TEXT
@@ -144,11 +168,14 @@ func _build() -> void:
 	box.anchor_top = 0.42
 	box.anchor_bottom = 0.42
 	box.offset_top = 0
-	box.offset_bottom = UiStyle.BUTTON_HEIGHT_PRIMARY + 36.0 + UiStyle.BUTTON_HEIGHT
+	box.offset_bottom = UiStyle.BUTTON_HEIGHT_PRIMARY + 36.0 + UiStyle.BUTTON_HEIGHT + 36.0 + UiStyle.BUTTON_HEIGHT
 	_root.add_child(box)
 	_resume_button = UiStyle.button("RESUME", true, "ResumeButton")
 	_quit_button = UiStyle.button(LEAVE_TEXT, false, "QuitButton")
+	_settings_button = UiStyle.button("SETTINGS", false, "SettingsButton")
 	box.add_child(_resume_button)
+	box.add_child(_settings_button)
 	box.add_child(_quit_button)
 	_resume_button.pressed.connect(_on_button_pressed.bind(_resume_button))
+	_settings_button.pressed.connect(_on_button_pressed.bind(_settings_button))
 	_quit_button.pressed.connect(_on_button_pressed.bind(_quit_button))

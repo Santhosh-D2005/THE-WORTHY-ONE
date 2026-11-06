@@ -54,6 +54,8 @@ var _login_screen: LoginScreen = null
 var _modes_button: Button
 var _hall_button: Button
 var _account_button: Button
+var _settings_button: Button
+var _settings_screen: SettingsScreen
 var _mode_screen: ModeScreen
 var _hall_screen: HallOfFameScreen
 var _account_screen: AccountScreen
@@ -73,6 +75,7 @@ func _ready() -> void:
 		_safe_nodes.append([node, true, node.offset_top, node.offset_bottom])
 	for node in [_play_button, _modes_button, _hall_button, _account_button, _quit_button]:
 		_safe_nodes.append([node, false, node.offset_top, node.offset_bottom])
+	_safe_nodes.append([_settings_button, true, _settings_button.offset_top, _settings_button.offset_bottom])
 	refresh_safe_area()
 	get_viewport().size_changed.connect(refresh_safe_area)
 	# Warm the gameplay scene on a background thread: pressing PLAY then switches without a long stall.
@@ -90,7 +93,11 @@ func _ready() -> void:
 	_account_screen = AccountScreen.new()
 	_account_screen.name = "AccountScreen"
 	add_child(_account_screen)
-	for panel_closed: Signal in [_login_screen.closed, _mode_screen.closed, _hall_screen.closed, _account_screen.closed]:
+	_settings_screen = SettingsScreen.new()
+	_settings_screen.name = "SettingsScreen"
+	_settings_screen.preview_audio = _audio
+	add_child(_settings_screen)
+	for panel_closed: Signal in [_login_screen.closed, _mode_screen.closed, _hall_screen.closed, _account_screen.closed, _settings_screen.closed]:
 		panel_closed.connect(func() -> void: _overlay_closed_frame = Engine.get_process_frames())
 	_mode_screen.mode_chosen.connect(start_game)
 	_mode_screen.hall_requested.connect(func(mode: GameMode.Mode) -> void:
@@ -162,7 +169,7 @@ func _input(event: InputEvent) -> void:
 		_touch_press_target = null
 
 func _button_at(point: Vector2) -> Button:
-	for button in [_play_button, _modes_button, _hall_button, _account_button, _quit_button]:
+	for button in [_play_button, _modes_button, _hall_button, _account_button, _quit_button, _settings_button]:
 		if button.get_global_rect().has_point(point):
 			return button
 	return null
@@ -189,7 +196,7 @@ func login_open() -> bool:
 
 ## True while any panel (login, modes, Hall of Fame, account) is on screen: the menu behind it is inert.
 func overlay_open() -> bool:
-	for screen in [_login_screen, _mode_screen, _hall_screen, _account_screen]:
+	for screen in [_login_screen, _mode_screen, _hall_screen, _account_screen, _settings_screen]:
 		if screen != null and screen.is_showing:
 			return true
 	return false
@@ -202,6 +209,12 @@ func hall_button() -> Button:
 
 func account_button() -> Button:
 	return _account_button
+
+func settings_button() -> Button:
+	return _settings_button
+
+func settings_screen() -> SettingsScreen:
+	return _settings_screen
 
 func mode_screen() -> ModeScreen:
 	return _mode_screen
@@ -224,13 +237,15 @@ func login_screen() -> LoginScreen:
 func _activate(button: Button) -> void:
 	if _acted or not buttons_ready or overlay_open():
 		return
-	if button == _modes_button or button == _hall_button or button == _account_button:
+	if button == _modes_button or button == _hall_button or button == _account_button or button == _settings_button:
 		if _audio != null:
 			_audio.play(&"ui_tap")
 		if button == _modes_button:
 			_mode_screen.open()
 		elif button == _hall_button:
 			_hall_screen.open_for(Progress.selected_mode)
+		elif button == _settings_button:
+			_settings_screen.open()
 		else:
 			_account_screen.open()
 		return
@@ -334,6 +349,17 @@ func _build_ui() -> void:
 			"ModesButton": _modes_button = small
 			"HallButton": _hall_button = small
 			_: _account_button = small
+
+	# SETTINGS sits in the top-right corner, out of the way of the title and the three doors.
+	_settings_button = UiStyle.button("SETTINGS", false, "SettingsButton", 30)
+	_settings_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_settings_button.offset_left = -310
+	_settings_button.offset_right = -40
+	_settings_button.offset_top = 60
+	_settings_button.offset_bottom = 180
+	_settings_button.size_flags_horizontal = Control.SIZE_FILL
+	_root.add_child(_settings_button)
+	_settings_button.pressed.connect(_on_button_pressed.bind(_settings_button))
 
 	# On top of everything: the fade from / to black.
 	_fade = ColorRect.new()

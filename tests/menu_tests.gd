@@ -92,7 +92,7 @@ func _t_structure_and_input_gate() -> void:
 		if (node as Button).is_visible_in_tree():
 			names.append((node as Button).text)
 	names.sort()
-	_check(buttons == 5 and names == ["ACCOUNT", "HALL OF FAME", "MODES", "PLAY", "QUIT"], "the menu shows exactly its five real actions (Phase 6/7: %s), no placeholder buttons" % str(names))
+	_check(buttons == 6 and names == ["ACCOUNT", "HALL OF FAME", "MODES", "PLAY", "QUIT", "SETTINGS"], "the menu shows exactly its six real actions (Phase 6/7 + settings: %s), no placeholder buttons" % str(names))
 	_check(menu.title_labels()[0].text == "THE" and menu.title_labels()[1].text == "WORTHY ONE", "the title reads THE WORTHY ONE")
 	_check(menu.get_node("Stage/Sword") != null and menu.get_node("Stage/Stump") != null and menu.get_node("Stage/Forest") != null, "the backdrop is the game's own forest, stump and sword")
 	_check((menu.get_node("Stage/Stump") as StumpBuilder).crack_amount() > 0.0 and (menu.get_node("Stage/Stump") as StumpBuilder).crack_glow() > 0.0, "the stump holds its faint amber crack glow")

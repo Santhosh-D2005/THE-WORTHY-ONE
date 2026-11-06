@@ -28,3 +28,8 @@ desktop.ini
 !.env.example
 *.key
 *.pem
+
+# Signing keys (never commit)
+*.keystore
+*.jks
+*.env

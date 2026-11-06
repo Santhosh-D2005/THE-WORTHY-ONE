@@ -53,7 +53,8 @@ const LOOP_END_MARGIN_FRAMES := 64
 @export var cue_streams: Dictionary = {}
 ## cue name -> volume in dB (optional; the defaults above are used otherwise).
 @export var cue_volumes_db: Dictionary = {}
-@export var bus: StringName = &"Master"
+## The bus the sound effects play on (Settings' SFX slider). The ambience always plays on Master (Settings' SOUND slider).
+@export var bus: StringName = &"SFX"
 
 var cue_count: int = 0
 var _players: Array[AudioStreamPlayer] = []
@@ -76,6 +77,10 @@ func _load_cue_streams() -> void:
 		if stream != null:
 			cue_streams[cue] = stream
 
+## A bus that does not exist (the Settings autoload creates SFX on start) falls back to Master, so a sound is never lost.
+func _bus_or_master(bus_name: StringName) -> StringName:
+	return bus_name if AudioServer.get_bus_index(bus_name) >= 0 else &"Master"
+
 ## Load one sound file by name, or null (never an error) when it is missing or not an AudioStream.
 func _load_stream(file_name: String) -> AudioStream:
 	var path := asset_dir.path_join(file_name + ".wav")
@@ -96,7 +101,7 @@ func play(cue: StringName, intensity: float = 0.0) -> void:
 	if _players.is_empty():
 		for i in POOL_SIZE:
 			var player := AudioStreamPlayer.new()
-			player.bus = bus
+			player.bus = _bus_or_master(bus)
 			add_child(player)
 			_players.append(player)
 	var chosen := _players[_next_player]
@@ -121,7 +126,7 @@ func play_ambience(volume_db: float = -24.0, fade_seconds: float = 1.5) -> void:
 	if _ambience_player == null:
 		_ambience_player = AudioStreamPlayer.new()
 		_ambience_player.name = "Ambience"
-		_ambience_player.bus = bus
+		_ambience_player.bus = &"Master"
 		_ambience_player.stream = _ambience_stream
 		_ambience_player.volume_db = SILENT_DB
 		add_child(_ambience_player)

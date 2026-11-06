@@ -70,6 +70,7 @@ func _ready() -> void:
 	_failure_screen.main_menu_requested.connect(_open_main_menu)
 	_pause_menu.resume_requested.connect(_resume_from_menu)
 	_pause_menu.quit_requested.connect(_quit_from_menu)
+	_pause_menu.set_preview_audio(_audio)
 	_fx = ExtractionFx.new()
 	_fx.name = "ExtractionFx"
 	$Stage.add_child(_fx)  # under the Stage, so it pauses with it
@@ -316,6 +317,8 @@ func _invalidate_ruthless_run(reason: String) -> bool:
 ##  - after losing focus (plain "tap to resume" pause) it upgrades to the menu;
 ##  - on the failure screen it does nothing: the run is already over and TRY AGAIN is on screen.
 func _on_back_requested() -> void:
+	if _pause_menu.back_belongs_to_settings():
+		return  # Back closes the settings panel (it handles that itself); it must not resume the game
 	match GameManager.state:
 		GameManager.State.FAILED:
 			return

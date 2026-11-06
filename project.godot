@@ -25,6 +25,7 @@ Progress="*res://scripts/core/progress.gd"
 Account="*res://scripts/core/account.gd"
 Backend="*res://scripts/core/backend.gd"
 RunSync="*res://scripts/core/run_sync.gd"
+Settings="*res://scripts/core/settings.gd"
 [display]
 
 window/size/viewport_width=1080

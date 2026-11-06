@@ -7,7 +7,7 @@ extends RefCounted
 ## the export (user_data_backup/allow=false), and the contents are encrypted with a key derived from the device id and the app name,
 ## so the file is not readable text and cannot simply be copied to another phone. It does NOT protect against a rooted device or someone
 ## who has the app's code and the phone. The server must therefore never treat the local secret as proof of anything but "the same
-## install"; account recovery for real security is the Google link.
+## install"; the login (username and password on the server) is what proves who a player is.
 
 const SALT := "theworthyone.account.v1"
 
