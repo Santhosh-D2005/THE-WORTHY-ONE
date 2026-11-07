@@ -2,7 +2,11 @@ class_name Hud
 extends CanvasLayer
 ## Gameplay HUD, built in code so layout stays adaptive (anchors) without scene churn.
 ## Purely presentational: it reads state and never changes gameplay.
-## Every Control ignores the mouse so taps always reach InputController.
+## Every Control ignores the mouse so taps always reach InputController, except the PAUSE button (top right): InputController is told
+## to ignore presses on it (blocked_rects_provider), and the HUD handles that press itself (touch, because mouse-from-touch is off; mouse,
+## through the Button). PAUSE does exactly what Android Back does: it pauses and opens the pause menu.
+
+signal pause_requested
 
 const GOLD := UiStyle.GOLD
 const GOLD_DIM := UiStyle.GOLD_DIM
@@ -17,6 +21,8 @@ var _level_label: Label
 var _level_time_label: Label
 var _session_time_label: Label
 var _banner: Control
+var _pause_button: Button
+var _pause_touch_down: bool = false
 var _hint: Label
 var _pause_overlay: ColorRect
 var _pause_overlay_suppressed: bool = false
@@ -33,7 +39,7 @@ var _complete_flash: float = 0.0  # bar glow when the extraction completes
 
 var _extraction: ExtractionManager
 var _timers: TimerManager
-var _input: InputController
+var _tap_input: InputController
 var _display_progress: float = 0.0
 var _progress: float = 0.0
 var _hint_tween: Tween = null
@@ -51,9 +57,9 @@ var _ui_faded: bool = false
 func setup(extraction: ExtractionManager, timers: TimerManager, input_controller: InputController) -> void:
 	_extraction = extraction
 	_timers = timers
-	_input = input_controller
+	_tap_input = input_controller
 	_extraction.progress_changed.connect(func(value: float) -> void: _progress = value)
-	_input.tap_accepted.connect(_on_tap_accepted)
+	_tap_input.tap_accepted.connect(_on_tap_accepted)
 	GameManager.level_changed.connect(_on_level_changed)
 	GameManager.state_changed.connect(_on_state_changed)
 	GameManager.extraction_succeeded.connect(func(_l: int, _t: float) -> void: _complete_flash = 1.0)
@@ -68,7 +74,8 @@ func _ready() -> void:
 	_build_tap_zones()
 	_build_banner()
 	_build_pause_overlay()
-	for top_node in [_level_label, _level_time_label, _session_time_label, _banner]:
+	_build_pause_button()
+	for top_node in [_level_label, _level_time_label, _session_time_label, _banner, _pause_button]:
 		_register_safe_area(top_node, true)
 	for bottom_node in [_bar, _hint, _zone_left, _zone_right]:
 		_register_safe_area(bottom_node, false)
@@ -111,6 +118,49 @@ func _build_top_bar() -> void:
 	_session_time_label.offset_top = 262
 	_session_time_label.offset_bottom = 314
 	add_child(_session_time_label)
+
+func _build_pause_button() -> void:
+	_pause_button = UiStyle.button("PAUSE", false, "PauseButton", 30)
+	_pause_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_pause_button.offset_left = -230
+	_pause_button.offset_right = -40
+	_pause_button.offset_top = 50
+	_pause_button.offset_bottom = 170
+	_pause_button.focus_mode = Control.FOCUS_NONE
+	add_child(_pause_button)
+	_pause_button.pressed.connect(func() -> void: pause_requested.emit())
+	_pause_button.visible = _pause_available(GameManager.state)
+
+## The PAUSE button is offered while a run is on screen (not while paused, on the failure screen or on the level-complete moment of failure).
+static func _pause_available(state: GameManager.State) -> bool:
+	return state == GameManager.State.READY or state == GameManager.State.PLAYING or state == GameManager.State.EXTRACTING
+
+func pause_button() -> Button:
+	return _pause_button
+
+## The area InputController must not count as a game tap (empty when the button is not shown).
+func pause_button_rect() -> Rect2:
+	if _pause_button == null or not _pause_button.is_visible_in_tree():
+		return Rect2()
+	return _pause_button.get_global_rect()
+
+func _input(event: InputEvent) -> void:
+	if not event is InputEventScreenTouch or _pause_button == null or not _pause_button.is_visible_in_tree():
+		return
+	var inside := _pause_button.get_global_rect().has_point(event.position)
+	if event.pressed:
+		_pause_touch_down = inside
+		if inside:
+			UiStyle.press_feedback(_pause_button, true)
+			get_viewport().set_input_as_handled()
+	else:
+		var fire := _pause_touch_down and inside
+		if _pause_touch_down:
+			UiStyle.press_feedback(_pause_button, false)
+		_pause_touch_down = false
+		if fire:
+			get_viewport().set_input_as_handled()
+			pause_requested.emit()
 
 func _build_progress_bar() -> void:
 	_bar = Control.new()
@@ -272,7 +322,7 @@ func _process(delta: float) -> void:
 	_flash_right = move_toward(_flash_right, 0.0, delta * 4.0)
 	# Gently pulse the zone the player should tap next.
 	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
-	var expected := _input.expected_side()
+	var expected := _tap_input.expected_side()
 	# The flash decays from the tap strength (1 = progress, 0.6 = first tap, 0.2 = too slow): the disc sinks and
 	# its groove catches warm light; the quiet pulse marks the side to tap next.
 	_zone_left.set_press(_flash_left)
@@ -334,7 +384,7 @@ func _on_tap_accepted(side: TapSide.Side) -> void:
 	# Zone feedback shows whether the tap counted: full flash = progress, medium = first tap (starts the
 	# rhythm), faint = alternating but too slow (no progress).
 	var strength := 1.0
-	match _input.last_kind:
+	match _tap_input.last_kind:
 		TapKind.Kind.FIRST:
 			strength = 0.6
 		TapKind.Kind.TOO_SLOW:
@@ -345,7 +395,7 @@ func _on_tap_accepted(side: TapSide.Side) -> void:
 		_flash_right = strength
 	if _hint_tween != null:
 		_hint_tween.kill()
-	if _input.last_kind == TapKind.Kind.TOO_SLOW:
+	if _tap_input.last_kind == TapKind.Kind.TOO_SLOW:
 		# Short, quiet reminder of the rule; fades by itself.
 		_hint.text = "TAP FASTER"
 		_hint.modulate.a = 0.9
@@ -372,6 +422,8 @@ func set_pause_overlay_suppressed(suppressed: bool) -> void:
 	_pause_overlay.visible = GameManager.state == GameManager.State.PAUSED and not suppressed
 
 func _on_state_changed(state: GameManager.State) -> void:
+	if _pause_button != null:
+		_pause_button.visible = _pause_available(state)
 	_pause_overlay.visible = state == GameManager.State.PAUSED and not _pause_overlay_suppressed
 	# On failure the gameplay HUD steps aside so the failure screen is clean; it returns when a
 	# new run starts (not on PAUSED, which can interrupt the failed state and return to it).

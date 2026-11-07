@@ -281,8 +281,9 @@ func _t_progress_steps() -> void:
 	_arm()
 	var config: DifficultyConfig = main.get_node("DifficultyManager").config
 	# 1.9: there is no fixed gain per tap. The peak gain is 6 % and a tap is worth what its measured interval earns.
-	_check(is_equal_approx(extraction.gain_per_tap, 6.0) and extraction.resistance == 0.0, "level 1: peak gain 6 %% per tap at the optimal speed, no resistance (%.2f)" % extraction.gain_per_tap)
+	_check(is_equal_approx(extraction.gain_per_tap, 5.2) and is_equal_approx(extraction.resistance, 0.08), "level 1: peak gain 5.2 %% per tap at the optimal speed, resistance 0.08 (%.2f)" % extraction.gain_per_tap)
 	var deltas: Array[float] = []
+	var befores: Array[float] = []
 	var intervals: Array[float] = []
 	var previous := 0.0
 	var worst_frame_jump := 0
@@ -303,6 +304,7 @@ func _t_progress_steps() -> void:
 			next_tap = Time.get_ticks_msec() + 70  # never catch up with a burst after a slow frame
 			await get_tree().process_frame  # let the tap be processed
 			deltas.append(extraction.progress - previous)
+			befores.append(previous)
 			intervals.append(input.last_interval_msec)
 			previous = extraction.progress
 		else:
@@ -315,7 +317,7 @@ func _t_progress_steps() -> void:
 	_check(deltas[0] == 0.0, "the first tap adds exactly 0")
 	var steps_ok := true
 	for i in range(1, deltas.size()):
-		var expected := SpeedGain.gain(intervals[i], extraction.gain_per_tap, extraction.optimal_interval_msec, extraction.useful_interval_msec, extraction.gain_exponent)
+		var expected := SpeedGain.gain(intervals[i], extraction.gain_per_tap, extraction.optimal_interval_msec, extraction.useful_interval_msec, extraction.gain_exponent) 			* (1.0 - extraction.resistance * befores[i] / 100.0)  # the last stretch resists: the gain shrinks as the bar fills
 		if absf(deltas[i] - expected) > 0.001 or expected <= 0.0:
 			steps_ok = false
 	var delta_sum := 0.0
@@ -366,7 +368,7 @@ func _t_levels_and_extraction() -> void:
 		_check(absf(wall - completions[lv]["seconds"]) < 0.15 and completions[lv]["seconds"] > 0.5 and completions[lv]["seconds"] < 12.0,
 			"level %d: the extraction time %.2f s matches the wall clock %.2f s (first valid tap to 100 %%)" % [lv + 1, completions[lv]["seconds"], wall])
 	_check(gains[1] < gains[0] and gains[2] < gains[1] and gains[3] < gains[2], "the peak gain falls slightly on every level (%.2f %.2f %.2f %.2f)" % [gains[0], gains[1], gains[2], gains[3]])
-	_check(resistances[0] == 0.0 and resistances[1] > 0.0 and resistances[2] > resistances[1], "extraction resistance rises (%.2f %.2f %.2f)" % [resistances[0], resistances[1], resistances[2]])
+	_check(resistances[0] >= 0.0 and resistances[1] > resistances[0] and resistances[2] > resistances[1], "extraction resistance rises (%.2f %.2f %.2f)" % [resistances[0], resistances[1], resistances[2]])
 	_check(limits[1] < limits[0] and limits[2] < limits[1] and limits[3] < limits[2], "the allowed tap gap tightens on every level")
 	_check(completions.size() == 3 and completions.all(func(c: Dictionary) -> bool: return not c.has("taps_shown")), "no tap count is part of what is reported to the player")
 	_check(completions.size() == 3 and completions[0]["intensity"] == 0.0 and completions[1]["intensity"] > 0.0 and completions[2]["intensity"] > completions[1]["intensity"], "the reward intensity grows with the level")

@@ -259,14 +259,14 @@ func _t_one_tap_then_stop() -> void:
 	print("\n[2] ONE VALID TAP, THEN STOP")
 	await _fresh_main()
 	var seconds := await _fail_the_run()
-	print("   failed %.2f s after the single tap (1.6 rule: the tap awards nothing; expected 0.5 s grace + 0.4 s allowed interval = 0.9 s)" % seconds)
-	_check(seconds > 0.75 and seconds < 1.4, "a single tap with no follow-up fails after grace + the allowed interval (%.2f s)" % seconds)
+	print("   failed %.2f s after the single tap (1.6 rule: the tap awards nothing; expected 0.35 s grace + 0.37 s allowed interval = 0.72 s at level 1)" % seconds)
+	_check(seconds > 0.6 and seconds < 1.2, "a single tap with no follow-up fails after grace + the allowed interval (%.2f s)" % seconds)
 	_check(GameManager.state == GameManager.State.FAILED and GameManager.run_over, "state FAILED, run marked over")
 	_check(extraction.progress == 0.0 and progress_min >= 0.0, "progress is exactly 0 (never negative)")
 	_check(failed_events.size() == 1, "exactly one failure event (%d)" % failed_events.size())
 	var result := failed_events[0]
 	_check(result.level_reached == 1 and result.extractions == 0, "result: level 1, 0 extractions")
-	_check(result.session_seconds > 0.75 and result.final_level_seconds > 0.75, "result carries real elapsed times (%.2f s)" % result.session_seconds)
+	_check(result.session_seconds > 0.6 and result.final_level_seconds > 0.6, "result carries real elapsed times (%.2f s)" % result.session_seconds)
 	_check(not input.enabled, "input disabled immediately")
 	_check(not extraction._active, "extraction stopped (inactive)")
 

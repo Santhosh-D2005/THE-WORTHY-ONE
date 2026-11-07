@@ -1,6 +1,8 @@
 class_name DifficultyConfig
 extends Resource
-## All level-scaling tunables in one place. Edit resources/difficulty/default_difficulty.tres
+## All level-scaling tunables in one place. The defaults below ARE the game's hardness for every level in BOTH modes: they are the values that
+## were tuned for Ruthless and judged right (ruthless_difficulty.tres holds the same numbers; server/schema.sql min_level_seconds mirrors them).
+## Edit resources/difficulty/default_difficulty.tres
 ## (or the inspector) to rebalance without touching any script.
 ##
 ## Every value blends from its "start" (level 1) toward its "end" along a saturating curve:
@@ -9,7 +11,7 @@ extends Resource
 ##
 ## THE PARAMETERS (Milestone 1.9: SPEED-BASED extraction, no fixed tap count).
 ##   A. speed response   progress per alternating tap depends on how fast the player alternates (see SpeedGain):
-##                         peak_gain          the most one tap can add (level 1: 6 %)
+##                         peak_gain          the most one tap can add (level 1: 5.2 %)
 ##                         optimal interval   tapping faster than this earns no more progress per second
 ##                         minimum useful     slower than this a tap adds nothing (a fraction of the max gap)
 ##                         exponent           how steeply faster tapping is rewarded
@@ -20,31 +22,31 @@ extends Resource
 ## Difficulty rises through B (a smaller window of useful speeds), C and a slightly smaller peak gain, NOT through a tap count.
 
 @export_group("A. Speed response (progress per alternating tap)")
-@export_range(0.5, 30.0, 0.1) var start_peak_gain: float = 6.0   ## % per tap at the optimal speed, level 1
-@export_range(0.5, 30.0, 0.1) var end_peak_gain: float = 3.8     ## very high levels (more effort per extraction)
-@export_range(0.0, 100.0, 0.5) var peak_gain_ramp_levels: float = 5.0  ## 0 = follow ramp_levels
+@export_range(0.5, 30.0, 0.1) var start_peak_gain: float = 5.2   ## % per tap at the optimal speed, level 1
+@export_range(0.5, 30.0, 0.1) var end_peak_gain: float = 3.2     ## very high levels (more effort per extraction)
+@export_range(0.0, 100.0, 0.5) var peak_gain_ramp_levels: float = 6.0  ## 0 = follow ramp_levels
 @export_range(40.0, 400.0, 5.0) var optimal_interval_msec: float = 130.0  ## about 7.7 taps/s: faster earns no more per second
 @export_range(0.3, 1.0, 0.01) var useful_fraction: float = 0.85  ## minimum useful speed = this x the level's max interval
 @export_range(0.5, 4.0, 0.05) var gain_curve_exponent: float = 1.4  ## 1 = linear in the interval, above 1 = faster is rewarded more
 
 @export_group("B. Tapping rhythm (longest allowed gap between alternating taps)")
-@export_range(120.0, 1500.0, 5.0) var start_max_tap_interval_msec: float = 400.0  ## level 1 (2.5 taps/s, the value of 1.6)
-@export_range(120.0, 1500.0, 5.0) var end_max_tap_interval_msec: float = 280.0    ## very high levels (3.6 taps/s)
-@export_range(0.0, 100.0, 0.5) var interval_ramp_levels: float = 5.0  ## 0 = follow ramp_levels
+@export_range(120.0, 1500.0, 5.0) var start_max_tap_interval_msec: float = 370.0  ## level 1 (2.7 taps/s)
+@export_range(120.0, 1500.0, 5.0) var end_max_tap_interval_msec: float = 250.0    ## very high levels (4 taps/s)
+@export_range(0.0, 100.0, 0.5) var interval_ramp_levels: float = 6.0  ## 0 = follow ramp_levels
 
 @export_group("C. Extraction resistance (0 = none, 0.5 = the last stretch counts half)")
-@export_range(0.0, 0.9, 0.01) var start_resistance: float = 0.0
-@export_range(0.0, 0.9, 0.01) var end_resistance: float = 0.5
-@export_range(0.0, 100.0, 0.5) var resistance_ramp_levels: float = 4.5  ## 0 = follow ramp_levels
+@export_range(0.0, 0.9, 0.01) var start_resistance: float = 0.08
+@export_range(0.0, 0.9, 0.01) var end_resistance: float = 0.6
+@export_range(0.0, 100.0, 0.5) var resistance_ramp_levels: float = 6.0  ## 0 = follow ramp_levels
 
 @export_group("D/E. Slip-back after a lapse (unchanged since 1.3)")
-@export_range(0.0, 20.0, 0.1) var start_decay_per_second: float = 5.0  ## % progress lost per second
-@export_range(0.0, 3.0, 0.05) var start_decay_grace_seconds: float = 0.5  ## idle time before decay starts
-@export_range(0.0, 40.0, 0.1) var end_decay_per_second: float = 16.0
-@export_range(0.0, 3.0, 0.05) var end_decay_grace_seconds: float = 0.2
+@export_range(0.0, 20.0, 0.1) var start_decay_per_second: float = 7.0  ## % progress lost per second
+@export_range(0.0, 3.0, 0.05) var start_decay_grace_seconds: float = 0.35  ## idle time before decay starts
+@export_range(0.0, 40.0, 0.1) var end_decay_per_second: float = 18.0
+@export_range(0.0, 3.0, 0.05) var end_decay_grace_seconds: float = 0.15
 
 @export_group("Curve")
-@export_range(1.0, 100.0, 0.5) var ramp_levels: float = 5.0  ## larger = slower difficulty climb
+@export_range(1.0, 100.0, 0.5) var ramp_levels: float = 6.0  ## larger = slower difficulty climb
 
 @export_group("Per-parameter curve speed (0 = use ramp_levels)")
 @export_range(0.0, 100.0, 0.5) var decay_ramp_levels: float = 0.0

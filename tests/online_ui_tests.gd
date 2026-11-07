@@ -245,7 +245,8 @@ func _t_hall() -> void:
 		_answer(0, case[0])
 		await _wait(0.1)
 		var has_local := int(Progress.best(GameMode.Mode.ENDLESS).get("best_level", 0)) > 0
-		_check(hall.view_state == case[1] and hall._message.text.contains(case[2]) and _row(hall, 0)["row"].visible == has_local, "answer %s -> state '%s' with a message; this device's best shows only when it has one" % [str(case[0]).left(40), case[1]])
+		var expect_row: bool = has_local if case[1] == "local" else false  # only the offline (local) view shows this device's best
+		_check(hall.view_state == case[1] and hall._message.text.contains(case[2]) and _row(hall, 0)["row"].visible == expect_row and (case[1] == "local" or hall._me_label.text == ""), "answer %s -> state '%s' with a message%s" % [str(case[0]).left(40), case[1], "; this device's best shows only when it has one" if case[1] == "local" else " and no rows"])
 	_check(hall._message.text.contains("No one has claimed") and hall._refresh.disabled == false, "the empty board has no invented entries and REFRESH is available")
 	# duplicate taps and refresh
 	hall.close()

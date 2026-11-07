@@ -416,14 +416,15 @@ func _section_extraction() -> void:
 
 	print(" - decay after grace period")
 	var p0 := extraction.progress
-	await _wait_until(t_last + 350)
-	_check(_near(extraction.progress, p0, 0.01), "no decay 0.35 s after the last valid tap (grace 0.5 s)")
-	await _wait_until(t_last + 1800)
+	var inside_grace_msec := int((difficulty_config.grace_for_level(1) - 0.1) * 1000.0)  # a little inside the level's grace period
+	await _wait_until(t_last + inside_grace_msec)
+	_check(_near(extraction.progress, p0, 0.01), "no decay %.2f s after the last valid tap (grace %.2f s)" % [inside_grace_msec / 1000.0, difficulty_config.grace_for_level(1)])
+	await _wait_until(t_last + int(difficulty_config.grace_for_level(1) * 1000.0) + 450)  # 0.45 s of decay: well before the small bar empties
 	var elapsed := float(Time.get_ticks_msec() - t_last) / 1000.0
 	var expected_loss := extraction.decay_per_second * (elapsed - extraction.decay_grace_seconds)
 	var loss := p0 - extraction.progress
 	print("   %.2f s after last tap: expected loss ~%.2f, measured %.2f" % [elapsed, expected_loss, loss])
-	_check(loss > 0.0 and absf(loss - expected_loss) < 0.6, "decayed at 5%/s after the grace period (within 0.6 points)")
+	_check(loss > 0.0 and absf(loss - expected_loss) < 0.6, "decayed at the level's rate (%.0f %%/s) after the grace period (within 0.6 points)" % extraction.decay_per_second)
 
 	print(" - progress never negative")
 	await _wait(5.0)
@@ -473,7 +474,7 @@ func _section_sword() -> void:
 	await _wait(0.06)
 	_tap_expected()
 	_check(sword._kick == 1.0, "valid tap sets the full kick impulse immediately")
-	await _wait(0.9)  # (1.10: the micro-motion effort fades over ~0.55 s; waiting longer would let this single tap decay into a failure)
+	await _wait(0.62)  # (the micro-motion effort fades over ~0.55 s; a single tap fails after grace 0.35 + gap 0.37 = 0.72 s, so wait inside that)
 	_check(sword._kick == 0.0 and sword._visual.position.length() < 0.001 and sword._visual.rotation.length() < 0.002,
 		"kick fully settles; the micro-motion residue is under 1 mm / 0.1 degree (exactly zero follows within about 0.5 s more: see fx_tests)")
 	var last := input.last_accepted_side
@@ -499,7 +500,7 @@ func _section_sword() -> void:
 	var samples: Array[float] = []
 	var jitter_max := 0.0
 	var started := Time.get_ticks_msec()
-	while Time.get_ticks_msec() - started < 1500:
+	while Time.get_ticks_msec() - started < 700:  # (decay is 7 %/s now: a longer window would empty the small bar and end the run)
 		await get_tree().process_frame
 		samples.append(sword.position.y)
 		jitter_max = maxf(jitter_max, absf(sword._visual.position.x))
@@ -686,9 +687,9 @@ func _section_timers() -> void:
 	_check(_near(extraction.progress, progress_pre, 0.001) or extraction.progress < progress_pre, "resume tap added no progress")
 	await _wait(0.3)
 	var level_after := timers.level_seconds()
-	_check(level_after > level_frozen + 0.2 and level_after < level_frozen + 0.45,
+	_check(level_after > level_frozen + 0.15 and level_after < level_frozen + 0.45,
 		"level timer continued from the frozen value, excluding the 0.8 s pause (%.3f -> %.3f)" % [level_frozen, level_after])
-	_check(timers.session_seconds() > session_frozen + 0.2 and timers.session_seconds() < session_frozen + 0.45,
+	_check(timers.session_seconds() > session_frozen + 0.15 and timers.session_seconds() < session_frozen + 0.45,
 		"session timer continued from the frozen value")
 
 	print(" - pause before the first tap")

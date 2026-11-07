@@ -154,19 +154,23 @@ func title_labels() -> Array[Label]:
 func _input(event: InputEvent) -> void:
 	if not event is InputEventScreenTouch or overlay_open():
 		return
+	# Take the viewport BEFORE any button is activated: a button can change the scene at once, and this node is then outside the tree, so
+	# get_viewport() would be null. In an exported release build that null call crashes the game natively (it was the MAIN MENU crash).
+	var viewport := get_viewport()
 	if event.pressed:
 		_touch_press_target = _button_at(event.position) if buttons_ready and not _acted else null
 		if _touch_press_target != null:
 			_press_feedback(_touch_press_target, true)
-			get_viewport().set_input_as_handled()
+			viewport.set_input_as_handled()
 	else:
 		var released_on := _button_at(event.position)
 		if _touch_press_target != null:
 			_press_feedback(_touch_press_target, false)
-		if released_on != null and released_on == _touch_press_target:
-			_activate(released_on)
-			get_viewport().set_input_as_handled()
+		var activated := released_on != null and released_on == _touch_press_target
 		_touch_press_target = null
+		if activated:
+			viewport.set_input_as_handled()
+			_activate(released_on)
 
 func _button_at(point: Vector2) -> Button:
 	for button in [_play_button, _modes_button, _hall_button, _account_button, _quit_button, _settings_button]:
@@ -269,9 +273,7 @@ func _fade_out_then(action: Callable) -> void:
 
 ## A short, lightweight touch response: the button dips a few percent while a finger is on it.
 func _press_feedback(button: Button, down: bool) -> void:
-	button.pivot_offset = button.size * 0.5
-	var tween := create_tween()
-	tween.tween_property(button, "scale", Vector2(0.97, 0.97) if down else Vector2.ONE, 0.08)
+	UiStyle.press_feedback(button, down)
 
 # ---- Construction ----------------------------------------------------------------------------
 

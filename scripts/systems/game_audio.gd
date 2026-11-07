@@ -94,6 +94,8 @@ func _load_stream(file_name: String) -> AudioStream:
 func play(cue: StringName, intensity: float = 0.0) -> void:
 	cue_count += 1
 	cue_requested.emit(cue, intensity)
+	if not is_inside_tree():
+		return  # this node has left the scene (a scene change is under way): nothing can play. (Asking a player outside the tree to play crashed Godot natively on Android.)
 	var raw: Variant = cue_streams.get(cue)
 	var stream: AudioStream = raw if raw is AudioStream else null  # (a non-stream value in the slot is ignored, never cast)
 	if stream == null:

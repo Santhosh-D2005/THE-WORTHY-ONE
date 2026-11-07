@@ -210,10 +210,10 @@ async function suite(label) {
   const rr = await account('Ruth_Less');
   let rrun = await startRun(rr.uid, 'ruthless');
   await age(rrun, 8);
-  check((await submit(rr.uid, rrun, 1, 2.0)).error === 'implausible_time', 'Ruthless has its own, stricter floor (2.0 s is below its 2.3 s limit for level 1)');
+  check((await submit(rr.uid, rrun, 1, 2.0)).error === 'implausible_time', 'Ruthless: 2.0 s is below the level 1 floor (about 2.3 s) and is refused');
   const sameInEndless = await startRun(q.uid, 'endless');
   await age(sameInEndless, 8);
-  check((await submit(q.uid, sameInEndless, 1, 2.0)).ok, '...while the same 2.0 s is allowed in Endless (limit 1.9 s)');
+  check((await submit(q.uid, sameInEndless, 1, 2.0)).error === 'implausible_time', '...and Endless now has the same hardness, so the same floor refuses the same 2.0 s');
   rrun = await startRun(rr.uid, 'ruthless');
   await age(rrun, 8);
   check((await submit(rr.uid, rrun, 1, 6)).ok, 'a valid Ruthless level 1 is accepted');

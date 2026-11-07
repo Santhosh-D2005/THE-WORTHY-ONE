@@ -66,6 +66,11 @@ func _ready() -> void:
 	_extraction.decay_stopped.connect(_sword.set_slipping.bind(false))
 	_extraction.extraction_completed.connect(_on_extraction_completed)
 	_extraction.progress_depleted.connect(_on_progress_depleted)
+	# The soft click of the buttons is connected FIRST. Signal handlers run in the order they were connected, and MAIN MENU changes the scene:
+	# the click must play while this scene (and its GameAudio) is still in the tree. (Connected last, as it was, the click ran after the scene
+	# had already left the tree, and Godot crashed natively on Android: "Playback can only happen when a node is inside the scene tree".)
+	for button_signal: Signal in [_pause_menu.resume_requested, _pause_menu.quit_requested, _failure_screen.retry_requested, _failure_screen.main_menu_requested]:
+		button_signal.connect(func() -> void: _audio.play(&"ui_tap"))
 	_failure_screen.retry_requested.connect(_restart_run)
 	_failure_screen.main_menu_requested.connect(_open_main_menu)
 	_pause_menu.resume_requested.connect(_resume_from_menu)
@@ -82,13 +87,14 @@ func _ready() -> void:
 	_finale.setup(_forest, _stump, _sword)
 	# 1.18: the forest ambience (very quiet) and a soft click for the existing buttons. Presentation only: nothing here touches gameplay.
 	_audio.play_ambience(AMBIENCE_DB, 2.5)
-	for button_signal: Signal in [_pause_menu.resume_requested, _pause_menu.quit_requested, _failure_screen.retry_requested, _failure_screen.main_menu_requested]:
-		button_signal.connect(func() -> void: _audio.play(&"ui_tap"))
 	_sword.planted.connect(_camera.shake.bind(0.7))
 	_sword.planted.connect(func() -> void: _audio.play(&"planted"))
 	_sword.freed.connect(_on_sword_freed)
 	GameManager.state_changed.connect(_on_state_changed)
 	_hud.setup(_extraction, _timers, _input)
+	# The HUD's PAUSE button does what Android Back does; a press on it is not a game tap.
+	_input.blocked_rects_provider = func() -> Array: return [_hud.pause_button_rect()]
+	_hud.pause_requested.connect(_on_back_requested)
 	_hud.show_preset_label(_difficulty.preset_name)
 
 	GameManager.reset_run()

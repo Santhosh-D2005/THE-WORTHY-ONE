@@ -153,11 +153,8 @@ declare
   lvl numeric := least(greatest(p_level, 1), 100) - 1;      -- difficulty stops rising at level 100
   steady numeric := lvl / 99.0;
 begin
-  if p_mode = 'ruthless' then
-    sp := 5.2; ep := 3.2; pr := 6.0; sr := 0.08; er := 0.6; rr := 6.0;
-  else
-    sp := 6.0; ep := 3.8; pr := 5.0; sr := 0.0; er := 0.5; rr := 4.5;
-  end if;
+  -- Endless and Ruthless share one hardness (resources/difficulty/default_difficulty.tres = ruthless_difficulty.tres), so one set of numbers.
+  sp := 5.2; ep := 3.2; pr := 6.0; sr := 0.08; er := 0.6; rr := 6.0;
   -- the same blend as DifficultyConfig._curve: 65 % quick exponential rise + 35 % steady rise to level 100
   gain := sp + (ep - sp) * (0.65 * (1 - exp(-lvl / pr)) + 0.35 * steady);
   res := least(greatest(sr + (er - sr) * (0.65 * (1 - exp(-lvl / rr)) + 0.35 * steady), 0), 0.9);

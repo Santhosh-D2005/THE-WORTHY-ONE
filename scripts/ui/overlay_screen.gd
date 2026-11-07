@@ -87,21 +87,27 @@ func _on_action(_button: Button) -> void:
 func _input(event: InputEvent) -> void:
 	if not is_showing:
 		return
+	# Take the viewport BEFORE any button is activated: a button can change the scene at once, and this node is then outside the tree, so
+	# get_viewport() would be null. In an exported release build that null call crashes the game natively (it was the MAIN MENU crash).
+	var viewport := get_viewport()
 	if event is InputEventScreenTouch:
+		viewport.set_input_as_handled()
 		if event.pressed:
 			_touch_press_target = _button_at(event.position) if buttons_ready else null
+			UiStyle.press_feedback(_touch_press_target, true)
 		else:
 			var released_on := _button_at(event.position)
-			if released_on != null and released_on == _touch_press_target:
+			UiStyle.press_feedback(_touch_press_target, false)
+			var activated := released_on != null and released_on == _touch_press_target
+			_touch_press_target = null
+			if activated:
 				_activate(released_on)
 			elif released_on == null and buttons_ready:
 				_focus_edit_at(event.position)
-			_touch_press_target = null
-		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		viewport.set_input_as_handled()
 		if _can_close():
 			close()
-		get_viewport().set_input_as_handled()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST and is_showing and _can_close():

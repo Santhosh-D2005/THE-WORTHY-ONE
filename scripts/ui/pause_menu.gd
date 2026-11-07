@@ -85,19 +85,25 @@ func back_belongs_to_settings() -> bool:
 func _input(event: InputEvent) -> void:
 	if not is_showing:
 		return
+	# Take the viewport BEFORE any button is activated: a button can change the scene at once, and this node is then outside the tree, so
+	# get_viewport() would be null. In an exported release build that null call crashes the game natively (it was the MAIN MENU crash).
+	var viewport := get_viewport()
 	if event is InputEventScreenTouch:
+		viewport.set_input_as_handled()  # nothing behind the menu may react (handled first; a button below may leave the scene)
 		if event.pressed:
 			_press_target = _button_at(event.position) if is_interactive() else null
+			UiStyle.press_feedback(_press_target, true)
 		else:
 			var released_on := _button_at(event.position)
-			if released_on != null and released_on == _press_target:
-				_activate(released_on)
+			UiStyle.press_feedback(_press_target, false)
+			var activated := released_on != null and released_on == _press_target
 			_press_target = null
-		get_viewport().set_input_as_handled()  # nothing behind the menu may react
+			if activated:
+				_activate(released_on)
 	elif event is InputEventMouseButton:
 		# Mouse clicks reach the Buttons through the GUI; just keep them away from everything else.
 		if event.pressed and not is_interactive():
-			get_viewport().set_input_as_handled()
+			viewport.set_input_as_handled()
 
 func _button_at(point: Vector2) -> Button:
 	for button in [_resume_button, _settings_button, _quit_button]:

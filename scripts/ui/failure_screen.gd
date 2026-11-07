@@ -56,7 +56,7 @@ func _ready() -> void:
 	layer = 15  # above the HUD (10)
 	process_mode = Node.PROCESS_MODE_PAUSABLE  # inert while the game is paused
 	_build()
-	for top_node in [_title, _root.get_node("Divider"), _root.get_node("Subtitle")]:
+	for top_node in [_title, _root.get_node("Divider"), _root.get_node("InfoColumn")]:
 		_safe_nodes.append([top_node, true, top_node.offset_top, top_node.offset_bottom])
 	for bottom_node in [_root.get_node("StatsPanel"), _root.get_node("Stats"), _root.get_node("Buttons")]:
 		_safe_nodes.append([bottom_node, false, bottom_node.offset_top, bottom_node.offset_bottom])
@@ -194,16 +194,22 @@ func _input(event: InputEvent) -> void:
 	# Touch path (mouse clicks reach the Button nodes directly through Godot's GUI).
 	if not is_showing or not visible or not event is InputEventScreenTouch:
 		return
+	# Take the viewport BEFORE any button is activated: a button can change the scene at once, and this node is then outside the tree, so
+	# get_viewport() would be null. In an exported release build that null call crashes the game natively (it was the MAIN MENU crash).
+	var viewport := get_viewport()
 	if event.pressed:
 		_touch_press_target = _button_at(event.position) if buttons_ready else null
 		if _touch_press_target != null:
-			get_viewport().set_input_as_handled()
+			UiStyle.press_feedback(_touch_press_target, true)
+			viewport.set_input_as_handled()
 	else:
 		var released_on := _button_at(event.position)
-		if released_on != null and released_on == _touch_press_target:
-			_activate(released_on)
-			get_viewport().set_input_as_handled()
+		UiStyle.press_feedback(_touch_press_target, false)
+		var activated := released_on != null and released_on == _touch_press_target
 		_touch_press_target = null
+		if activated:
+			viewport.set_input_as_handled()  # handled first; the activation below may leave the scene
+			_activate(released_on)
 
 func _button_at(point: Vector2) -> Button:
 	for button in [_try_again_button, _main_menu_button]:
@@ -261,35 +267,39 @@ func _build() -> void:
 	divider.offset_bottom = 307
 	_root.add_child(divider)
 
+	# The three lines of text under the heading (the quiet subtitle, the mode / best / online status, and the one line of flavour text) sit in
+	# ONE column. The column stacks them with a fixed gap and grows with whatever wraps, so lines can never run into each other whatever the
+	# phone's width or the length of the text. It only grows downward from under the divider, towards the statistics panel.
+	var info := VBoxContainer.new()
+	info.name = "InfoColumn"
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	info.offset_left = 50
+	info.offset_right = -50
+	info.offset_top = 330
+	info.offset_bottom = 330
+	info.add_theme_constant_override("separation", 26)
+	_root.add_child(info)
+
 	# 1.16: one quiet line under the heading (not red, not dramatic: the wood simply holds).
 	_subtitle = _make_label("THE WOOD HOLDS FAST", UiStyle.SIZE_CAPTION + 5, UiStyle.PARCHMENT_DIM)
 	_subtitle.name = "Subtitle"
-	_subtitle.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_subtitle.offset_top = 330
-	_subtitle.offset_bottom = 392
-	_root.add_child(_subtitle)
+	_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_child(_subtitle)
 
 	# Phase 6/7: the mode, the player's own best and what happened online, in two quiet lines. Never blocks the buttons.
 	_status_label = _make_label("", 26, UiStyle.CAPTION)
 	_status_label.name = "RunStatus"
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_status_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_status_label.offset_left = 60
-	_status_label.offset_right = -60
-	_status_label.offset_top = 400
-	_status_label.offset_bottom = 500
-	_root.add_child(_status_label)
+	_status_label.add_theme_constant_override("line_spacing", 12)
+	info.add_child(_status_label)
 
 	# One short line of flavour text (Gemini via the server, or a built-in line). Decoration only; never blocks anything.
 	_verdict_label = _make_label("", 30, UiStyle.PARCHMENT_DIM)
 	_verdict_label.name = "Verdict"
 	_verdict_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_verdict_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	_verdict_label.offset_left = 70
-	_verdict_label.offset_right = -70
-	_verdict_label.offset_top = 540
-	_verdict_label.offset_bottom = 660
-	_root.add_child(_verdict_label)
+	_verdict_label.add_theme_constant_override("line_spacing", 10)
+	info.add_child(_verdict_label)
 
 	# 1.16: a quiet panel behind the three statistics, so they read as one group.
 	var stats_panel := UiStyle.panel("StatsPanel")

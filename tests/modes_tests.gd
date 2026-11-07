@@ -283,8 +283,9 @@ func _t_scene_ruthless() -> void:
 	await _fresh(GameMode.Mode.RUTHLESS)
 	var ruthless: DifficultyConfig = load("res://resources/difficulty/ruthless_difficulty.tres")
 	var normal: DifficultyConfig = load("res://resources/difficulty/default_difficulty.tres")
-	_check(Progress.run_active and Progress.run_mode == GameMode.Mode.RUTHLESS and is_equal_approx(extraction.gain_per_tap, ruthless.peak_gain_for_level(1)) and not is_equal_approx(ruthless.peak_gain_for_level(1), normal.peak_gain_for_level(1)),
-		"a Ruthless run uses the Ruthless difficulty (peak %.1f vs %.1f)" % [extraction.gain_per_tap, normal.peak_gain_for_level(1)])
+	# Endless was given Ruthless's hardness for every level (the Ruthless values were judged right), so both modes share one curve.
+	_check(Progress.run_active and Progress.run_mode == GameMode.Mode.RUTHLESS and is_equal_approx(extraction.gain_per_tap, ruthless.peak_gain_for_level(1)) and is_equal_approx(ruthless.peak_gain_for_level(1), normal.peak_gain_for_level(1)) and is_equal_approx(ruthless.end_resistance, normal.end_resistance) and is_equal_approx(ruthless.start_max_tap_interval_msec, normal.start_max_tap_interval_msec),
+		"a Ruthless run uses the Ruthless difficulty, which Endless now shares (peak %.1f, Endless %.1f)" % [extraction.gain_per_tap, normal.peak_gain_for_level(1)])
 	_check(bool(_disk().data["ruthless_run"]["active"]), "the run is marked active on disk from the first moment")
 	await _tap_until_complete(150.0, 30.0)
 	await _wait_ready_at(2)

@@ -29,6 +29,9 @@ func _ready() -> void:
 	await _t_pause_menu()
 	await _t_credits()
 	await _t_delete_flow()
+	await _t_pause_button()
+	await _t_menu_button_order()
+	await _t_touch_leaves_scene()
 	Settings.reset_to_defaults()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(Settings.default_path()))
 	print("\n%d checks, %d failure(s)" % [_checks, _failures])
@@ -255,3 +258,128 @@ func _t_delete_flow() -> void:
 	screen.queue_free()
 	Account.reset_for_test(Account.TEST_FILE_PATH)
 	await _frames(2)
+
+# ---- The PAUSE button in the game ------------------------------------------------------------------------------------------------
+
+func _t_pause_button() -> void:
+	print("PAUSE button")
+	var game := (load("res://scenes/main/main.tscn") as PackedScene).instantiate()
+	add_child(game)
+	await get_tree().create_timer(7.5).timeout  # the level 1 entrance
+	var hud := game.get_node("Hud") as Hud
+	var button := hud.pause_button()
+	_check(button != null and button.text == "PAUSE" and button.is_visible_in_tree(), "the game has a PAUSE button on screen")
+	var rect := button.get_global_rect()
+	_check(rect.size.y >= 100.0 and rect.end.x <= hud.get_viewport().get_visible_rect().size.x, "the PAUSE button is big enough to tap and inside the screen")
+	# A press on the button is not a game tap; a press elsewhere still is.
+	var input := game.get_node("InputController") as InputController
+	var taps := [0]
+	input.tap_accepted.connect(func(_side: TapSide.Side) -> void: taps[0] += 1)
+	var on_button := InputEventScreenTouch.new()
+	on_button.pressed = true
+	on_button.position = rect.get_center()
+	input._input(on_button)
+	_check(taps[0] == 0, "a press on PAUSE is not counted as a game tap")
+	var elsewhere := InputEventScreenTouch.new()
+	elsewhere.pressed = true
+	elsewhere.position = Vector2(50, 900)
+	input._input(elsewhere)
+	_check(taps[0] == 1, "a press elsewhere is still a game tap")
+	# PAUSE pauses the game and opens the pause menu (like the Back button).
+	var pause_menu := game.get_node("PauseMenu") as PauseMenu
+	button.pressed.emit()
+	_check(GameManager.state == GameManager.State.PAUSED and pause_menu.is_showing, "PAUSE pauses the game and opens the pause menu")
+	_check(not button.is_visible_in_tree(), "the PAUSE button hides while the game is paused")
+	pause_menu.resume_requested.emit()
+	await get_tree().process_frame
+	_check(GameManager.state != GameManager.State.PAUSED and button.is_visible_in_tree(), "RESUME brings the game back and shows PAUSE again")
+	# Back also pauses.
+	game._on_back_requested()
+	_check(GameManager.state == GameManager.State.PAUSED and pause_menu.is_showing, "the Back button pauses too")
+	game.queue_free()
+	GameManager.reset_run()
+	get_tree().paused = false
+	await get_tree().process_frame
+
+# ---- MAIN MENU: the click plays BEFORE the scene changes (a crash on the phone) -----------------------------------------------------------
+
+func _t_menu_button_order() -> void:
+	print("MAIN MENU button order")
+	# A sound asked of an audio node that is outside the tree is ignored, never played (it crashed Godot natively on Android).
+	var lonely := GameAudio.new()
+	lonely.play(&"ui_tap")
+	_check(lonely.cue_count == 1 and lonely.get_child_count() == 0, "a GameAudio outside the scene tree ignores a sound request (no player is created)")
+	lonely.free()
+	var game := (load("res://scenes/main/main.tscn") as PackedScene).instantiate()
+	add_child(game)
+	await get_tree().create_timer(7.5).timeout
+	var audio := game.get_node("Audio") as GameAudio
+	var order: Array[String] = []
+	game.scene_changer = func(_path: String) -> void: order.append("scene")
+	audio.cue_requested.connect(func(cue: StringName, _i: float) -> void: order.append(String(cue)))
+	# From the pause menu.
+	game._on_back_requested()
+	game.get_node("PauseMenu").quit_requested.emit()
+	_check(order == ["ui_tap", "scene"], "pause menu, MAIN MENU: the click plays first, then the scene changes (%s)" % str(order))
+	# From the failure screen.
+	order.clear()
+	GameManager.reset_run()
+	get_tree().paused = false
+	GameManager.set_state(GameManager.State.FAILED)
+	game.get_node("FailureScreen").main_menu_requested.emit()
+	_check(order == ["ui_tap", "scene"], "failure screen, MAIN MENU: the click plays first, then the scene changes (%s)" % str(order))
+	game.queue_free()
+	GameManager.reset_run()
+	get_tree().paused = false
+	await get_tree().process_frame
+
+# ---- A real touch on MAIN MENU: the screen leaves the scene DURING the tap (the phone crash) -----------------------------------------------
+
+## On the phone, MAIN MENU changed the scene at once; the input handler then called get_viewport() on a node that was already outside the
+## tree (null) and the exported release build crashed natively. Here the scene change is replaced by "take the screen out of the tree",
+## which is exactly what it did to the handler. Run the suite and look for "SCRIPT ERROR": there must be none.
+func _t_touch_leaves_scene() -> void:
+	print("Touch on MAIN MENU while the scene changes")
+	var game := (load("res://scenes/main/main.tscn") as PackedScene).instantiate()
+	add_child(game)
+	await get_tree().create_timer(7.5).timeout
+	# The failure screen.
+	var failure := game.get_node("FailureScreen") as FailureScreen
+	game.scene_changer = func(_path: String) -> void: game.remove_child(failure)
+	GameManager.reset_run()
+	get_tree().paused = false
+	GameManager.set_state(GameManager.State.FAILED)
+	failure.is_showing = true
+	failure.visible = true
+	failure.buttons_ready = true
+	await get_tree().process_frame  # let the freshly shown screen be laid out, so its buttons have a position
+	await get_tree().process_frame
+	var point := (failure.find_child("MainMenuButton", true, false) as Button).get_global_rect().get_center()
+	var press := InputEventScreenTouch.new()
+	press.pressed = true
+	press.position = point
+	failure._input(press)
+	var release := InputEventScreenTouch.new()
+	release.pressed = false
+	release.position = point
+	failure._input(release)
+	_check(not failure.is_inside_tree(), "a touch on the failure screen's MAIN MENU changed the scene (the screen left the tree during the tap) without an error")
+	game.add_child(failure)  # put it back for the next part
+	# The pause menu.
+	GameManager.reset_run()
+	GameManager.set_state(GameManager.State.READY)
+	var pause := game.get_node("PauseMenu") as PauseMenu
+	game._on_back_requested()
+	await get_tree().create_timer(0.5).timeout  # the pause menu ignores presses for a moment after it opens
+	game.scene_changer = func(_path: String) -> void: game.remove_child(pause)
+	var pause_point := pause.quit_button().get_global_rect().get_center()
+	press.position = pause_point
+	release.position = pause_point
+	pause._input(press)
+	pause._input(release)
+	_check(not pause.is_inside_tree(), "a touch on the pause menu's MAIN MENU changed the scene (the menu left the tree during the tap) without an error")
+	game.queue_free()
+	GameManager.reset_run()
+	get_tree().paused = false
+	await get_tree().process_frame
+

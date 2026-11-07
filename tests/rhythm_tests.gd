@@ -260,7 +260,7 @@ func _t_first_tap_and_pair() -> void:
 	_arm()
 	var gain := extraction.gain_per_tap
 	var level1_limit: float = main.get_node("DifficultyManager").config.max_interval_for_level(1)
-	_check(is_equal_approx(input.max_interval_msec, level1_limit) and is_equal_approx(level1_limit, 400.0), "level 1 allows 400 ms between taps (%.0f)" % input.max_interval_msec)
+	_check(is_equal_approx(input.max_interval_msec, level1_limit) and is_equal_approx(level1_limit, difficulty_config.start_max_tap_interval_msec), "level 1 allows %.0f ms between taps (the configured start value; %.0f)" % [difficulty_config.start_max_tap_interval_msec, input.max_interval_msec])
 	_tap_left()
 	await _frames(2)
 	_check(GameManager.state == GameManager.State.PLAYING and kinds == [TapKind.Kind.FIRST], "the first tap starts the attempt (PLAYING) as a FIRST tap")

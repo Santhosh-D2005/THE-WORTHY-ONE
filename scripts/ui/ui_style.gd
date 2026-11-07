@@ -89,6 +89,18 @@ static func button(text: String, primary: bool, node_name: String, font_size: in
 	node.add_theme_stylebox_override("disabled", button_style(Color(0.03, 0.04, 0.03, 0.45), Color(0.78, 0.65, 0.36, 0.35), 2))
 	return node
 
+## The response a button gives to a finger: it shrinks and brightens while held (and a short buzz on touch-down), then springs back.
+## Every screen routes its manual touch handling through this, so every button in the game answers a touch the same way.
+static func press_feedback(button: Button, down: bool) -> void:
+	if button == null or not button.is_inside_tree():
+		return
+	button.pivot_offset = button.size * 0.5
+	var tween := button.create_tween().set_parallel(true)
+	tween.tween_property(button, "scale", Vector2(0.95, 0.95) if down else Vector2.ONE, 0.07)
+	tween.tween_property(button, "modulate", Color(1.5, 1.35, 1.0) if down else Color.WHITE, 0.07)
+	if down and not DisplayServer.get_name() == "headless":
+		Input.vibrate_handheld(18)
+
 ## A quiet translucent panel with a thin amber hairline (behind statistics and cards).
 static func panel_style(fill: Color = PANEL_DEEP, border: Color = Color(0.78, 0.65, 0.36, 0.38)) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()

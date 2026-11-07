@@ -4,16 +4,16 @@
 
 [resource]
 script = ExtResource("1_cfg")
-start_peak_gain = 5.0
-end_peak_gain = 3.8
-peak_gain_ramp_levels = 10.0
-start_max_tap_interval_msec = 360.0
-end_max_tap_interval_msec = 260.0
-interval_ramp_levels = 10.0
-start_resistance = 0.05
-end_resistance = 0.50
-start_decay_per_second = 6.5
-start_decay_grace_seconds = 0.35
-end_decay_per_second = 16.0
-end_decay_grace_seconds = 0.2
-ramp_levels = 10.0
+start_peak_gain = 4.8
+end_peak_gain = 3.0
+peak_gain_ramp_levels = 6.0
+start_max_tap_interval_msec = 350.0
+end_max_tap_interval_msec = 240.0
+interval_ramp_levels = 6.0
+start_resistance = 0.1
+end_resistance = 0.6
+start_decay_per_second = 8.0
+start_decay_grace_seconds = 0.3
+end_decay_per_second = 18.0
+end_decay_grace_seconds = 0.12
+ramp_levels = 6.0

@@ -25,6 +25,10 @@ var last_interval_msec: float = -1.0
 var _has_previous_tap: bool = false
 var _last_accepted_usec: int = 0
 
+## Optional: returns an Array of Rect2 (screen areas) where presses are NOT game taps, e.g. the HUD's PAUSE button. A press inside one is
+## left alone (not handled, not counted) so the control under it receives it.
+var blocked_rects_provider: Callable = Callable()
+
 var _last_tap_msec: int = -100000
 var _locked_until_msec: int = 0
 
@@ -70,6 +74,10 @@ func _input(event: InputEvent) -> void:
 		press_position = event.position  # desktop testing fallback
 	else:
 		return
+	if blocked_rects_provider.is_valid():
+		for blocked: Variant in blocked_rects_provider.call():
+			if blocked is Rect2 and (blocked as Rect2).has_point(press_position):
+				return
 	get_viewport().set_input_as_handled()
 	var half_width := get_viewport().get_visible_rect().size.x * 0.5
 	handle_tap(TapSide.Side.LEFT if press_position.x < half_width else TapSide.Side.RIGHT)

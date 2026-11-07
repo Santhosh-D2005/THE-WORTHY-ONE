@@ -188,7 +188,9 @@ func _t_irregular_and_stop() -> void:
 	await _fresh()
 	var alt := await _tap(func(i: int) -> float: return 120.0 if i % 2 == 0 else 280.0, 60.0)
 	var avg := config.simulate_extraction_seconds(1, 200.0)
-	_check(alt["completed"] and alt["wall"] > avg, "a lopsided rhythm (120/280 ms, average 200 ms) is slower than steady 200 ms (%.1f s vs %.1f s): consistency is rewarded" % [alt["wall"], avg])
+	# With the Ruthless curve (steep reward for speed, 314 ms useful limit at level 1) a burst pattern is about as good as a steady one at the
+	# same average, so the old claim "consistency is rewarded" no longer holds. What must hold: it still completes, and lands close to steady.
+	_check(alt["completed"] and absf(alt["wall"] - avg) < 0.15 * avg, "a lopsided rhythm (120/280 ms, average 200 ms) completes and lands within 15 %% of steady 200 ms (%.1f s vs %.1f s)" % [alt["wall"], avg])
 	# Stopping midway: tap for a while, stop, progress holds during grace, then decays at the level's rate.
 	await _fresh()
 	var stop_at := Time.get_ticks_msec() + 1500
@@ -205,8 +207,9 @@ func _t_irregular_and_stop() -> void:
 	var stopped_at := extraction.progress
 	var t_stop := last_tap  # the grace period counts from the last valid tap
 	_check(stopped_at > 15.0 and stopped_at < 90.0 and not _completed, "after 1.5 s of tapping at 170 ms the bar stands at %.1f %%" % stopped_at)
-	await _wait(maxf(0.0, 0.35 - float(Time.get_ticks_msec() - t_stop) / 1000.0))  # 0.35 s after the LAST tap (the grace counts from it; 1.10: measured from the tap, not from the end of the loop, which sat right at the limit)
-	_check(absf(extraction.progress - stopped_at) < 0.01, "0.35 s after stopping nothing is lost yet (grace 0.5 s)")
+	var inside_grace := config.grace_for_level(1) - 0.1  # a little inside the level's grace period (0.35 s at level 1)
+	await _wait(maxf(0.0, inside_grace - float(Time.get_ticks_msec() - t_stop) / 1000.0))  # counted from the LAST tap (1.10: measured from the tap, not from the end of the loop, which sat right at the limit)
+	_check(absf(extraction.progress - stopped_at) < 0.01, "%.2f s after stopping nothing is lost yet (grace %.2f s)" % [inside_grace, config.grace_for_level(1)])
 	await _wait(1.15)
 	var elapsed := float(Time.get_ticks_msec() - t_stop) / 1000.0
 	var expected_loss := config.decay_for_level(1) * (elapsed - config.grace_for_level(1))
@@ -229,10 +232,11 @@ func _t_levels() -> void:
 			slower_each = false
 		previous = r["wall"]
 	_check(slower_each, "at the same speed a higher level never extracts faster than the one before")
-	# At level 10 the same steady 250 ms tapper that finishes level 1 can no longer finish in a reasonable time.
+	# With the shared (Ruthless) hardness level 1 asks for more than 4 taps/s (its minimum useful speed is 314 ms); 5 taps/s finishes it,
+	# and at level 10 a steady 250 ms tapper can no longer finish in a reasonable time.
 	await _fresh(1)
-	var easy := await _tap(_steady(250.0), 40.0)
-	_check(easy["completed"], "level 1 can be extracted at 4 taps/s (%.1f s)" % easy["wall"])
+	var easy := await _tap(_steady(200.0), 40.0)
+	_check(easy["completed"], "level 1 can be extracted at 5 taps/s (%.1f s)" % easy["wall"])
 	await _fresh(10)
 	var hard := await _tap(_steady(250.0), 12.0)
 	_check(not hard["completed"], "level 10 needs more than 4 taps/s: not finished in 12 s at that speed (max %.0f %%)" % _max_progress)

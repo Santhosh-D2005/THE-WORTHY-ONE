@@ -60,9 +60,9 @@ func _test_extraction() -> void:
 func _test_difficulty() -> void:
 	print("DifficultyConfig (Milestone 1.9: speed-based, no fixed tap count)")
 	var config: DifficultyConfig = load("res://resources/difficulty/default_difficulty.tres")
-	_check(is_equal_approx(config.peak_gain_for_level(1), 6.0) and is_equal_approx(config.max_interval_for_level(1), 400.0), "level 1: peak gain 6 %, longest allowed gap 400 ms")
-	_check(is_equal_approx(config.decay_for_level(1), 5.0), "level 1 decay = 5")
-	_check(is_equal_approx(config.grace_for_level(1), 0.5), "level 1 grace = 0.5")
+	_check(is_equal_approx(config.peak_gain_for_level(1), 5.2) and is_equal_approx(config.max_interval_for_level(1), 370.0), "level 1: peak gain 5.2 %, longest allowed gap 370 ms (the Ruthless hardness, now shared by Endless)")
+	_check(is_equal_approx(config.decay_for_level(1), 7.0), "level 1 decay = 7")
+	_check(is_equal_approx(config.grace_for_level(1), 0.35), "level 1 grace = 0.35")
 	var monotonic := true
 	for level in range(1, 200):
 		# Difficulty only ever rises: the useful window of speeds shrinks, resistance and decay rise and the peak gain falls.
@@ -176,10 +176,10 @@ func _test_difficulty_independence() -> void:
 	print("Difficulty: the parameters are independent (1.3, extended in 1.7)")
 	var base := _default_config()
 	# Decay and grace are exactly the shipped curves from Milestone 1.3 (they must not get more aggressive).
-	_check(is_equal_approx(base.decay_for_level(1), 5.0) and is_equal_approx(base.grace_for_level(1), 0.5),
-		"default level-1 decay / grace unchanged (5 / 0.5)")
-	_check(is_equal_approx(base.end_decay_per_second, 16.0) and is_equal_approx(base.end_decay_grace_seconds, 0.2) and is_equal_approx(base.ramp_levels, 7.0),
-		"default asymptotes and ramp (1.25: 16 / 0.2, ramp 7, so levels 2-5 are clearly harder)")
+	_check(is_equal_approx(base.decay_for_level(1), 7.0) and is_equal_approx(base.grace_for_level(1), 0.35),
+		"default level-1 decay / grace (7 / 0.35, the Ruthless values)")
+	_check(is_equal_approx(base.end_decay_per_second, 18.0) and is_equal_approx(base.end_decay_grace_seconds, 0.15) and is_equal_approx(base.ramp_levels, 6.0),
+		"default asymptotes and ramp (18 / 0.15, ramp 6, so levels 2-5 are clearly harder)")
 	var levels := [1, 2, 5, 12, 30, 200]
 	for which in ["peak", "resistance", "interval", "decay", "grace"]:
 		var changed: DifficultyConfig = base.duplicate()
@@ -248,12 +248,12 @@ func _test_presets() -> void:
 			# 1.8: the whole game is gentler (taps 10-110, gain up to 10 % per tap on level 1).
 			# Achievable: the allowed gap never below 200 ms, a useful window of speeds that always exists (useful > optimal),
 			# a sane peak gain, resistance well below "impossible". 1.9: no tap count exists any more.
-			if gap < 200.0 - 0.001 or preset.min_useful_interval_for_level(level) <= preset.optimal_interval_msec + 20.0 or peak < 1.0 or peak > 12.0 or preset.resistance_for_level(level) > 0.6:
+			if gap < 200.0 - 0.001 or preset.min_useful_interval_for_level(level) <= preset.optimal_interval_msec + 20.0 or peak < 1.0 or peak > 12.0 or preset.resistance_for_level(level) > 0.6 + 1e-6:
 				all_sane = false
-			if grace < 0.1 or decay * maxf(0.0, 1.0 - grace) > 15.0:
+			if grace < 0.1 or decay * maxf(0.0, 1.0 - grace) > 16.0:  # the shared (Ruthless) hardness costs 15.3 % at its end
 				all_sane = false
 	_check(all_load, "all 5 presets load as DifficultyConfig")
-	_check(all_sane, "every preset stays achievable over levels 1-200 (gap >= 200 ms, a useful speed window, peak gain 1-12 %, resistance <= 0.6, lapse cost <= 15 %)")
+	_check(all_sane, "every preset stays achievable over levels 1-200 (gap >= 200 ms, a useful speed window, peak gain 1-12 %, resistance <= 0.6, lapse cost <= 16 %)")
 	var grace_only: DifficultyConfig = load("res://resources/difficulty/presets/grace_long.tres")
 	var decay_only: DifficultyConfig = load("res://resources/difficulty/presets/decay_slow.tres")
 	var taps_only: DifficultyConfig = load("res://resources/difficulty/presets/gain_high.tres")
@@ -427,12 +427,12 @@ func _test_rhythm_input() -> void:
 	legacy.free()
 
 func _test_rhythm_difficulty() -> void:
-	print("Rhythm difficulty progression (gap 400 -> 280 ms, Milestone 1.25)")
+	print("Rhythm difficulty progression (gap 370 -> 250 ms, the Ruthless hardness shared by both modes)")
 	var config: DifficultyConfig = load("res://resources/difficulty/default_difficulty.tres")
 	var values: Array[float] = []
 	for level in range(1, 61):
 		values.append(config.max_interval_for_level(level))
-	_check(is_equal_approx(values[0], 400.0), "level 1 allows 400 ms between taps (the value players approved in 1.6)")
+	_check(is_equal_approx(values[0], 370.0), "level 1 allows 370 ms between taps")
 	var monotonic := true
 	var biggest_step := 0.0
 	for i in range(1, values.size()):
@@ -441,13 +441,13 @@ func _test_rhythm_difficulty() -> void:
 		biggest_step = maxf(biggest_step, values[i - 1] - values[i])
 	_check(monotonic, "the allowed interval never gets longer as levels rise")
 	_check(biggest_step < 18.0 and biggest_step > 10.0, "gradual: the biggest single-level tightening is %.1f ms (no jumps)" % biggest_step)
-	_check(values[4] > 343.0 and values[4] < 353.0, "level 5 ~348 ms (%.0f)" % values[4])
-	_check(values[9] > 308.0 and values[9] < 318.0, "level 10 ~313 ms (%.0f)" % values[9])
-	_check(values[19] > 283.0 and values[19] < 293.0, "level 20 ~288 ms (%.0f)" % values[19])
-	_check(values[59] >= 280.0 and values[59] < 283.0, "very high levels approach but never pass 280 ms (3.6 taps/s) (%.1f)" % values[59])
-	var t10 := 1.0 - exp(-9.0 / 7.0)
-	_check(is_equal_approx(config.decay_for_level(10), lerpf(5.0, 16.0, t10)) and is_equal_approx(config.grace_for_level(10), lerpf(0.5, 0.2, t10)),
-		"level 10 decay / grace follow the 1.25 curves (ramp 7)")
+	_check(values[4] > 326.0 and values[4] < 335.0, "level 5 ~330 ms (%.0f)" % values[4])
+	_check(values[9] > 302.0 and values[9] < 310.0, "level 10 ~306 ms (%.0f)" % values[9])
+	_check(values[19] > 283.0 and values[19] < 292.0, "level 20 ~287 ms (%.0f)" % values[19])
+	_check(values[59] >= 250.0 and values[59] < 270.0, "very high levels approach but never pass 250 ms (4 taps/s) (%.1f)" % values[59])
+	var t10 := config.difficulty_factor(10)
+	_check(is_equal_approx(config.decay_for_level(10), lerpf(7.0, 18.0, t10)) and is_equal_approx(config.grace_for_level(10), lerpf(0.35, 0.15, t10)),
+		"level 10 decay / grace follow the curve (7 -> 18 %/s, 0.35 -> 0.15 s, ramp 6)")
 	var variant := config.duplicate() as DifficultyConfig
 	variant.start_max_tap_interval_msec = 600.0
 	variant.end_max_tap_interval_msec = 300.0
@@ -472,7 +472,7 @@ func _test_rhythm_difficulty() -> void:
 	manager.apply_for_level(6)
 	_check(seen.size() == 2 and is_equal_approx(seen[0], config.max_interval_for_level(1)) and is_equal_approx(seen[1], config.max_interval_for_level(6)),
 		"DifficultyManager announces the interval for each level it applies")
-	_check(seen_resistance.size() == 2 and seen_resistance[0] == 0.0 and is_equal_approx(seen_resistance[1], config.resistance_for_level(6)),
+	_check(seen_resistance.size() == 2 and is_equal_approx(seen_resistance[0], config.resistance_for_level(1)) and is_equal_approx(seen_resistance[1], config.resistance_for_level(6)),
 		"...and the extraction resistance")
 	manager.free()
 
@@ -582,8 +582,8 @@ func _test_progress_design() -> void:
 	_check(m2.progress == 0.0 and m2.last_gain == 0.0, "a 350 ms tap (slower than the minimum useful speed) adds nothing")
 	m2.free()
 	# Resistance: the last stretch needs faster tapping.
-	_check(config.resistance_for_level(1) == 0.0 and config.resistance_for_level(5) > 0.0 and config.resistance_for_level(20) > config.resistance_for_level(10)
-		and config.resistance_for_level(300) <= config.end_resistance + 0.001, "resistance starts at 0, rises with the level and stays under its cap")
+	_check(is_equal_approx(config.resistance_for_level(1), 0.08) and config.resistance_for_level(5) > config.resistance_for_level(1) and config.resistance_for_level(20) > config.resistance_for_level(10)
+		and config.resistance_for_level(300) <= config.end_resistance + 0.001, "resistance starts at 0.08, rises with the level and stays under its cap")
 	# The displayed percentage is a whole number that tracks the real progress.
 	for level in [1, 4, 10, 30]:
 		var m3 := ExtractionManager.new()
