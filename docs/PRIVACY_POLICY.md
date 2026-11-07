@@ -5,7 +5,7 @@
 > advice; have it reviewed if you want certainty for your country.
 
 **Last updated:** [DATE]
-**Contact:** [YOUR CONTACT EMAIL]
+**Contact:** mrcarkstudios@gmail.com
 
 THE WORTHY ONE ("the game") is a mobile game. You can play it entirely offline without an account. This policy explains what is
 stored, where, and how to delete it.
@@ -38,7 +38,7 @@ Account data is kept while the account exists. Accounts that have not been used 
 ## Deleting your account and data
 - **In the game:** open **Account**, choose **Delete account**, and type your password. Your username, records and runs are removed
   from our server and the name becomes free again. This cannot be undone.
-- **Without the game or if you cannot log in:** write to [YOUR CONTACT EMAIL] with your username and we will delete the account.
+- **Without the game or if you cannot log in:** write to mrcarkstudios@gmail.com with your username and we will delete the account.
   Because there is no email on the account, we may ask you to describe your best level and time to confirm it is yours.
 
 ## Children

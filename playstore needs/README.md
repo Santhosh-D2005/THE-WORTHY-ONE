@@ -17,7 +17,7 @@
 - `app icon/app-icon-512x512.png` - the 512x512 store icon.
 - `feature-graphic-1024x500.png` - the feature graphic (required).
 - `screenshots/` - 9 phone screenshots (1080x1920): menu, gameplay, pause, level complete, failure, and 3 of LEVEL 9999. Play needs 2-8 per device type; choose up to 8 (the three level 9999 images are 07-09).
-- `PRIVACY_POLICY.md` / `PRIVACY_POLICY.html` - the policy. Host the HTML at a public URL (e.g. GitHub Pages) and paste that URL into Play Console > App content > Privacy policy. FIRST replace `[YOUR CONTACT EMAIL]` in both files.
+- `PRIVACY_POLICY.md` / `PRIVACY_POLICY.html` - the policy. Host the HTML at a public URL (e.g. GitHub Pages) and paste that URL into Play Console > App content > Privacy policy. The contact email (mrcarkstudios@gmail.com) is already filled in.
 
 ## Suggested store text
 Short description (80 chars): `Tap fast, pull the sword from the stump. How far can you climb?`
@@ -30,6 +30,6 @@ Full description: One sword. One tree. One challenge. Alternate your taps left a
 - Content rating: no violence beyond a sword being pulled from wood, no gambling, no user-to-user chat.
 
 ## Before you press publish
-1. Put your email into the privacy policy and host it.
+1. Host the privacy policy HTML at a public URL.
 2. Run `server/migration_floor_update.sql` in the Supabase SQL Editor (keeps anti-cheat in line with the game).
 3. New personal developer accounts must run a closed test (about 12 testers, 14 days) before production; check your Console.
