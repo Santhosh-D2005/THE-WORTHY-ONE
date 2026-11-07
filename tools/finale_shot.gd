@@ -3,7 +3,7 @@ extends Node
 ##   godot --path . res://tools/finale_shot.tscn -- <output folder>        (needs a window: not --headless)
 ## Frames: ready (progress 0), mid pull (55 %), about to break free (94 %). Also a level-1 frame for comparison.
 func _ready() -> void:
-	get_window().size = Vector2i(540, 960)
+	get_window().size = Vector2i(1080, 1920)
 	var out_dir: String = OS.get_cmdline_user_args()[0] if OS.get_cmdline_user_args().size() > 0 else "user://"
 	var main: Node = load("res://scenes/main/main.tscn").instantiate()
 	add_child(main)
