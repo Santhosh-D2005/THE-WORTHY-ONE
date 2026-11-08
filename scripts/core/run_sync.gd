@@ -55,6 +55,9 @@ func _on_run_started(mode: GameMode.Mode, run_id: String) -> void:
 	if not enabled:
 		_set_status("disabled")
 		return
+	if Progress.run_start_level > 1:
+		_set_status("offline")  # a continued run does not start at level 1, which the Hall of Fame cannot verify: local only
+		return
 	if not Account.logged_in:
 		_set_status("signed_out")  # not logged in: the run counts for the phone's own best only
 		return

@@ -48,8 +48,8 @@ func advance_level() -> void:
 
 ## Start a fresh run: level 1, no extractions, not over. Lifetime records are NOT touched
 ## (none exist yet; when they do they live outside this object).
-func reset_run() -> void:
-	level = 1
+func reset_run(start_level: int = 1) -> void:
+	level = clampi(start_level, 1, MAX_LEVEL)
 	run_extractions = 0
 	run_over = false
 	last_result = null

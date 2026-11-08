@@ -53,7 +53,10 @@ func _on_opened() -> void:
 	for mode_value in _best_labels:
 		var mode: GameMode.Mode = mode_value
 		var best := Progress.best(mode)
-		(_best_labels[mode] as Label).text = "YOUR BEST: LEVEL %d" % int(best["best_level"]) if int(best["best_level"]) > 0 else "NO SWORD DRAWN YET"
+		if mode == GameMode.Mode.ENDLESS:
+			(_best_labels[mode] as Label).text = "CONTINUE FROM LEVEL %d" % Progress.start_level_for(mode)
+		else:
+			(_best_labels[mode] as Label).text = "YOUR BEST: LEVEL %d" % int(best["best_level"]) if int(best["best_level"]) > 0 else "NO SWORD DRAWN YET"
 
 func begin_button(mode: GameMode.Mode) -> Button:
 	return _find(mode, true)

@@ -97,7 +97,7 @@ func _ready() -> void:
 	_hud.pause_requested.connect(_on_back_requested)
 	_hud.show_preset_label(_difficulty.preset_name)
 
-	GameManager.reset_run()
+	GameManager.reset_run(Progress.start_level_for(Progress.selected_mode))
 	_timers.reset_session()
 	_apply_mode_difficulty()
 	Progress.begin_run(Progress.selected_mode)
@@ -258,8 +258,8 @@ func _on_progress_depleted() -> void:
 func _restart_run() -> void:
 	if GameManager.state != GameManager.State.FAILED:
 		return  # ignore stray / duplicate presses
-	GameManager.reset_run()
-	_finale.apply(false)  # back to the ordinary forest after the last level
+	GameManager.reset_run(Progress.start_level_for(Progress.selected_mode))
+	_finale.apply(GameManager.level >= GameManager.MAX_LEVEL)  # back to the ordinary forest after the last level
 	_timers.reset_level()
 	_timers.reset_session()
 	Progress.begin_run(Progress.selected_mode)

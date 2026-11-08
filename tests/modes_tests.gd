@@ -34,6 +34,7 @@ func _ready() -> void:
 	await _t_relaunch()
 	await _t_scene_endless()
 	await _t_scene_ruthless()
+	_t_endless_continue()
 	_cleanup()
 	print("\n==== %d checks, %d failed ====" % [_checks, _failures])
 	print("RESULT: ALL PASSED" if _failures == 0 else "RESULT: FAILURES")
@@ -275,6 +276,44 @@ func _t_scene_endless() -> void:
 	await _wait(0.4)
 	_check(Progress.run_active and Progress.run_valid and Progress.highest_completed_level() == 0 and GameManager.level == 1, "TRY AGAIN starts a new Endless run at level 1")
 	_check(int(Progress.best(GameMode.Mode.ENDLESS)["best_level"]) == 2, "...and the best (2) is kept")
+
+# ---- 7. Endless continues where the player left off ---------------------------------------------------------
+
+func _t_endless_continue() -> void:
+	print("
+[7] ENDLESS CONTINUES FROM THE LEVEL THE PLAYER REACHED")
+	Progress.continue_endless = true
+	_reset_progress()
+	_check(Progress.start_level_for(GameMode.Mode.ENDLESS) == 1, "a new player starts at level 1")
+	Progress.begin_run(GameMode.Mode.ENDLESS)
+	for level in range(1, 6):
+		GameManager.extraction_succeeded.emit(level, 5.0)
+	_check(Progress.start_level_for(GameMode.Mode.ENDLESS) == 6 and int(_disk().data["endless_level"]) == 6, "after completing level 5 the next run starts at level 6 (already on disk)")
+	Progress.end_run("left")
+	Progress.begin_run(GameMode.Mode.ENDLESS)
+	_check(Progress.run_start_level == 6, "a new Endless run begins at the saved level 6")
+	GameManager.extraction_succeeded.emit(1, 5.0)
+	_check(Progress.highest_completed_level() == 5, "the old level 1 is refused in a run that began at 6")
+	GameManager.extraction_succeeded.emit(6, 5.0)
+	_check(Progress.highest_completed_level() == 6 and Progress.start_level_for(GameMode.Mode.ENDLESS) == 7, "level 6 is accepted and moves the save to 7")
+	Progress.end_run("failed")
+	_check(Progress.start_level_for(GameMode.Mode.ENDLESS) == 7, "failing keeps the player on the level they reached (7)")
+	_check(Progress.start_level_for(GameMode.Mode.RUTHLESS) == 1, "Ruthless always starts at level 1")
+	var reloaded := _disk()
+	_check(int(reloaded.data["endless_level"]) == 7, "the saved level survives a reload from disk")
+	reloaded.data["endless_level"] = 99999
+	reloaded.save()
+	var clamped := SaveStore.new(Progress.store.path)
+	clamped.load_data()
+	_check(int(clamped.data["endless_level"]) == 9999, "a damaged saved level is clamped into 1..9999")
+	_reset_progress()
+	Progress.begin_run(GameMode.Mode.ENDLESS)
+	Progress.run_start_level = GameManager.MAX_LEVEL
+	GameManager.extraction_succeeded.emit(GameManager.MAX_LEVEL, 5.0)
+	_check(Progress.start_level_for(GameMode.Mode.ENDLESS) == 1, "finishing level 9999 sends the next run back to level 1")
+	Progress.end_run("completed")
+	Progress.continue_endless = false
+	_reset_progress()
 
 # ---- 5. the real scene: Ruthless ---------------------------------------------------------------------------
 

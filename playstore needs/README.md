@@ -4,8 +4,8 @@
 |---|---|
 | App name | THE WORTHY ONE |
 | Package name (application ID) | `com.theworthyone.game` (permanent once uploaded) |
-| Version name / code | 0.2.0 / 8 (raise the code by 1 for every new upload) |
-| Upload file | `aab/TheWorthyOne-0.2.0.aab` (Android App Bundle, signed with your release key, alias `worthyone`) |
+| Version name / code | 0.2.2 / 10 (raise the code by 1 for every new upload) |
+| Upload file | `aab/TheWorthyOne-0.2.2.aab` (Android App Bundle, signed with your release key, alias `worthyone`) |
 | Target | Android phones, portrait, arm64 |
 | Category | Games > Arcade (suggested) |
 | Permissions | Internet, Vibrate |

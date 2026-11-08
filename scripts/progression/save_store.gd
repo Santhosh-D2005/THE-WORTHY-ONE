@@ -25,6 +25,8 @@ static func default_data() -> Dictionary:
 		# mid-run: that run is closed as abandoned and can never be resumed (there is deliberately no level or state to resume from).
 		"ruthless_run": {"active": false, "run_id": "", "started_unix": 0},
 		"last_run": {},
+		# Endless only: the level the next run starts at (the level the player was on when they left or failed). 1 for a new player.
+		"endless_level": 1,
 		# Reports to the server that have not been delivered yet (see RunSync): [{"kind": "level"|"end", "run": server run id, ...}].
 		"queue": [],
 	}
@@ -102,6 +104,7 @@ func _merge(source: Dictionary) -> void:
 	if run is Dictionary:
 		var r: Dictionary = run
 		data["ruthless_run"] = {"active": bool(r.get("active", false)), "run_id": str(r.get("run_id", "")), "started_unix": maxi(int(r.get("started_unix", 0)), 0)}
+	data["endless_level"] = clampi(_number_int(source.get("endless_level", 1)), 1, 9999)
 	var queue: Variant = source.get("queue", [])
 	if queue is Array:
 		for raw in queue:

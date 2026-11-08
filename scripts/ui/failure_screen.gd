@@ -156,6 +156,8 @@ func _refresh_status() -> void:
 		return
 	var best := Progress.best(_shown_result.mode)
 	var lines: Array[String] = ["%s   BEST: LEVEL %d" % [GameMode.title(_shown_result.mode), int(best["best_level"])]]
+	if _shown_result.mode == GameMode.Mode.ENDLESS:
+		lines = ["ENDLESS   NEXT RUN: LEVEL %d" % Progress.start_level_for(GameMode.Mode.ENDLESS)]
 	var online := online_text(_shown_result, RunSync.status)
 	if online != "":
 		lines.append(online)

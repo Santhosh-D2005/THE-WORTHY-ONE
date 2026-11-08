@@ -27,6 +27,11 @@ var run_id: String = ""
 ## [{level, seconds}] in order, for the levels completed in the current run (the evidence the server will check).
 var run_levels: Array[Dictionary] = []
 var run_started_unix: int = 0
+## The level this run started at: 1, except an Endless run that continues where the player left off.
+var run_start_level: int = 1
+## Endless continues from the saved level. The headless test suites switch this off (they all expect a run to begin at level 1);
+## the tests of the feature itself switch it back on.
+var continue_endless: bool = true
 ## True if this launch found a Ruthless run that was still active (the app was killed mid-run). Shown once, then cleared.
 var abandoned_run_found: bool = false
 
@@ -34,6 +39,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	store = SaveStore.new(default_path())
 	store.load_data()
+	continue_endless = DisplayServer.get_name() != "headless"
 	_recover_abandoned_run()
 	GameManager.extraction_succeeded.connect(_on_extraction_succeeded)
 
@@ -59,6 +65,12 @@ func can_resume_ruthless_run() -> bool:
 
 # ---- Runs ------------------------------------------------------------------------------------------
 
+## The level a new run in `mode` begins at: Endless continues where the player left off, Ruthless always starts at 1.
+func start_level_for(mode: GameMode.Mode) -> int:
+	if mode == GameMode.Mode.ENDLESS and continue_endless:
+		return clampi(int(store.data.get("endless_level", 1)), 1, GameManager.MAX_LEVEL)
+	return 1
+
 ## Start a new run in `mode`. A Ruthless run is written to disk as active BEFORE anything else happens.
 func begin_run(mode: GameMode.Mode) -> String:
 	if run_active:
@@ -66,6 +78,7 @@ func begin_run(mode: GameMode.Mode) -> String:
 	run_mode = mode
 	run_id = _new_run_id()
 	run_levels = []
+	run_start_level = start_level_for(mode)
 	run_active = true
 	run_valid = true
 	run_started_unix = int(Time.get_unix_time_from_system())
@@ -78,13 +91,15 @@ func begin_run(mode: GameMode.Mode) -> String:
 func _on_extraction_succeeded(level: int, seconds: float) -> void:
 	if not run_active or not run_valid:
 		return  # an invalid or finished run records nothing
-	if level != run_levels.size() + 1 or level > GameManager.MAX_LEVEL:
-		return  # levels are only accepted in order, 1, 2, 3 ... up to the last level, 9999
+	if level != run_start_level + run_levels.size() or level > GameManager.MAX_LEVEL:
+		return  # levels are only accepted in order, from the run's first level up to the last level, 9999
 	run_levels.append({"level": level, "seconds": seconds})
 	var key := GameMode.key(run_mode)
 	var rec := store.record(key)
 	rec["extractions"] = int(rec["extractions"]) + 1
 	var improved := store.submit_level(key, level, seconds)
+	if run_mode == GameMode.Mode.ENDLESS:
+		store.data["endless_level"] = level + 1 if level < GameManager.MAX_LEVEL else 1  # the next run continues from here
 	store.save()
 	level_recorded.emit(run_mode, level, seconds, improved)
 
@@ -123,7 +138,7 @@ func end_run(reason: String) -> Dictionary:
 
 ## Levels completed in the current (or last) run. The level being attempted is never counted.
 func highest_completed_level() -> int:
-	return run_levels.size()
+	return run_start_level - 1 + run_levels.size()
 
 ## After logging in, the server's records (the authority for the Hall of Fame) are brought onto this phone if they are better than the
 ## local ones. A reinstall plus a login therefore restores the player's best levels.
